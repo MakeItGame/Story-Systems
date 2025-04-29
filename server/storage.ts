@@ -42,32 +42,21 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private documents: Map<number, Document>;
-  private credentials: Map<number, Credential>;
-  private userCredentials: Map<number, UserCredential>;
+import connectPg from 'connect-pg-simple';
+import { db } from './db';
+import { eq, and } from 'drizzle-orm';
+import { pool } from './db';
+
+const PostgresSessionStore = connectPg(session);
+
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  private currentUserId: number;
-  private currentDocumentId: number;
-  private currentCredentialId: number;
-  private currentUserCredentialId: number;
 
   constructor() {
-    this.users = new Map();
-    this.documents = new Map();
-    this.credentials = new Map();
-    this.userCredentials = new Map();
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24h
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
-    this.currentUserId = 1;
-    this.currentDocumentId = 1;
-    this.currentCredentialId = 1;
-    this.currentUserCredentialId = 1;
-    
-    // Initialize with sample data
-    this.initializeData();
   }
 
   private initializeData() {
@@ -124,193 +113,249 @@ export class MemStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      isAdmin: insertUser.isAdmin || false, // Make sure isAdmin is set
-      createdAt: new Date(), 
-      lastLogin: new Date() 
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        isAdmin: insertUser.isAdmin || false,
+        createdAt: new Date(),
+        lastLogin: new Date(),
+      })
+      .returning();
     return user;
   }
 
   async updateUserLastLogin(id: number): Promise<User | undefined> {
-    const user = await this.getUser(id);
-    if (user) {
-      const updatedUser = { ...user, lastLogin: new Date() };
-      this.users.set(id, updatedUser);
-      return updatedUser;
-    }
-    return undefined;
+    const [updatedUser] = await db
+      .update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
   }
 
   // Document operations
   async getDocument(id: number): Promise<Document | undefined> {
-    return this.documents.get(id);
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
   }
 
   async getDocumentByCode(code: string): Promise<Document | undefined> {
-    return Array.from(this.documents.values()).find(
-      (doc) => doc.documentCode === code
-    );
+    const [document] = await db.select().from(documents).where(eq(documents.documentCode, code));
+    return document;
   }
 
   async getDocuments(): Promise<Document[]> {
-    return Array.from(this.documents.values());
+    return await db.select().from(documents);
   }
 
   async getAccessibleDocuments(secLevel: number, medLevel: number, adminLevel: number): Promise<Document[]> {
-    return Array.from(this.documents.values()).filter(
-      (doc) => 
-        doc.securityLevel <= secLevel &&
-        doc.medicalLevel <= medLevel &&
-        doc.adminLevel <= adminLevel
+    const allDocs = await db.select().from(documents);
+    
+    // Filter manually since SQL comparison with nullable fields can be tricky
+    return allDocs.filter(doc => 
+      (doc.securityLevel === null || doc.securityLevel <= secLevel) &&
+      (doc.medicalLevel === null || doc.medicalLevel <= medLevel) &&
+      (doc.adminLevel === null || doc.adminLevel <= adminLevel)
     );
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<Document> {
-    const id = this.currentDocumentId++;
-    const document: Document = { 
-      ...insertDocument, 
-      id, 
-      createdAt: new Date(), 
-      updatedAt: new Date(),
-      revisionNumber: 1
+    // Extract and prepare document values
+    const documentData = {
+      documentCode: insertDocument.documentCode,
+      title: insertDocument.title,
+      content: insertDocument.content,
+      securityLevel: insertDocument.securityLevel ?? 0,
+      medicalLevel: insertDocument.medicalLevel ?? 0,
+      adminLevel: insertDocument.adminLevel ?? 0,
+      author: insertDocument.author,
+      hasImages: insertDocument.hasImages ?? false,
+      // Ensure these are valid JSON objects
+      images: insertDocument.images ?? [],
+      relatedDocuments: insertDocument.relatedDocuments ?? []
     };
-    this.documents.set(id, document);
-    return document;
+    
+    try {
+      // Insert the document
+      const [document] = await db
+        .insert(documents)
+        .values(documentData)
+        .returning();
+      return document;
+    } catch (error) {
+      console.error('Error creating document:', error);
+      throw error;
+    }
   }
 
-  async updateDocument(id: number, document: Partial<Document>): Promise<Document | undefined> {
+  async updateDocument(id: number, documentData: Partial<Document>): Promise<Document | undefined> {
     const existingDocument = await this.getDocument(id);
-    if (existingDocument) {
-      const updatedDocument = { 
-        ...existingDocument, 
-        ...document, 
+    if (!existingDocument) return undefined;
+    
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({
+        ...documentData,
         updatedAt: new Date(),
-        revisionNumber: existingDocument.revisionNumber + 1
-      };
-      this.documents.set(id, updatedDocument);
-      return updatedDocument;
-    }
-    return undefined;
+        revisionNumber: (existingDocument.revisionNumber || 0) + 1
+      })
+      .where(eq(documents.id, id))
+      .returning();
+    
+    return updatedDocument;
   }
 
   // Credential operations
   async getCredential(id: number): Promise<Credential | undefined> {
-    return this.credentials.get(id);
+    const [credential] = await db.select().from(credentials).where(eq(credentials.id, id));
+    return credential;
   }
 
   async getCredentialByUsername(username: string): Promise<Credential | undefined> {
-    return Array.from(this.credentials.values()).find(
-      (cred) => cred.username === username
-    );
+    const [credential] = await db.select().from(credentials).where(eq(credentials.username, username));
+    return credential;
   }
 
   async getCredentials(): Promise<Credential[]> {
-    return Array.from(this.credentials.values());
+    return await db.select().from(credentials);
   }
 
   async createCredential(insertCredential: InsertCredential): Promise<Credential> {
-    const id = this.currentCredentialId++;
-    const credential: Credential = { 
-      ...insertCredential, 
-      id, 
-      isActive: true,
-      discoveredAt: new Date()
-    };
-    this.credentials.set(id, credential);
+    const [credential] = await db
+      .insert(credentials)
+      .values({
+        username: insertCredential.username,
+        password: insertCredential.password,
+        displayName: insertCredential.displayName,
+        securityLevel: insertCredential.securityLevel ?? 0,
+        medicalLevel: insertCredential.medicalLevel ?? 0,
+        adminLevel: insertCredential.adminLevel ?? 0,
+        isActive: true,
+        discoveredAt: new Date()
+      })
+      .returning();
     return credential;
   }
 
   // User-Credential operations
   async getUserCredentials(userId: number): Promise<(Credential & { isSelected: boolean })[]> {
-    const userCredentialEntries = Array.from(this.userCredentials.values()).filter(
-      (uc) => uc.userId === userId
-    );
+    const userCreds = await db
+      .select()
+      .from(userCredentials)
+      .where(eq(userCredentials.userId, userId));
     
-    return Promise.all(
-      userCredentialEntries.map(async (uc) => {
-        const credential = await this.getCredential(uc.credentialId);
-        if (credential) {
-          return { ...credential, isSelected: uc.isSelected };
-        }
-        throw new Error(`Credential with id ${uc.credentialId} not found`);
-      })
-    );
+    const result: (Credential & { isSelected: boolean })[] = [];
+    
+    for (const uc of userCreds) {
+      const credential = await this.getCredential(uc.credentialId);
+      if (credential) {
+        result.push({ 
+          ...credential, 
+          isSelected: uc.isSelected === true // Convert null to false
+        });
+      }
+    }
+    
+    return result;
   }
 
   async addCredentialToUser(insertUserCredential: InsertUserCredential): Promise<UserCredential> {
-    const id = this.currentUserCredentialId++;
-    const userCredential: UserCredential = { ...insertUserCredential, id };
-    this.userCredentials.set(id, userCredential);
+    const [userCredential] = await db
+      .insert(userCredentials)
+      .values({
+        userId: insertUserCredential.userId,
+        credentialId: insertUserCredential.credentialId,
+        isSelected: insertUserCredential.isSelected || false
+      })
+      .returning();
+    
     return userCredential;
   }
 
   async setSelectedCredential(userId: number, credentialId: number): Promise<UserCredential | undefined> {
     // First, unselect all credentials for this user
-    const userCredentialEntries = Array.from(this.userCredentials.values())
-      .filter((uc) => uc.userId === userId);
-    
-    for (const uc of userCredentialEntries) {
-      this.userCredentials.set(uc.id, { ...uc, isSelected: false });
-    }
+    await db
+      .update(userCredentials)
+      .set({ isSelected: false })
+      .where(eq(userCredentials.userId, userId));
     
     // Then, select the specified credential
-    const targetUserCredential = userCredentialEntries.find(
-      (uc) => uc.credentialId === credentialId
-    );
+    const [updatedUserCredential] = await db
+      .update(userCredentials)
+      .set({ isSelected: true })
+      .where(
+        and(
+          eq(userCredentials.userId, userId),
+          eq(userCredentials.credentialId, credentialId)
+        )
+      )
+      .returning();
     
-    if (targetUserCredential) {
-      const updatedUserCredential = { ...targetUserCredential, isSelected: true };
-      this.userCredentials.set(targetUserCredential.id, updatedUserCredential);
-      return updatedUserCredential;
-    }
-    
-    return undefined;
+    return updatedUserCredential;
   }
 
   async checkIfCredentialObsolete(userId: number, newCredential: Credential): Promise<Credential | undefined> {
     const userCredentials = await this.getUserCredentials(userId);
     
+    // Ensure we have values and not null for comparison
+    const newSecLevel = newCredential.securityLevel || 0;
+    const newMedLevel = newCredential.medicalLevel || 0;
+    const newAdminLevel = newCredential.adminLevel || 0;
+    
     // Check if there's an existing credential that is made obsolete by the new one
-    return userCredentials.find(existingCred => 
-      existingCred.securityLevel <= newCredential.securityLevel &&
-      existingCred.medicalLevel <= newCredential.medicalLevel &&
-      existingCred.adminLevel <= newCredential.adminLevel &&
-      (
-        existingCred.securityLevel < newCredential.securityLevel ||
-        existingCred.medicalLevel < newCredential.medicalLevel ||
-        existingCred.adminLevel < newCredential.adminLevel
-      )
-    );
+    return userCredentials.find(existingCred => {
+      const existSecLevel = existingCred.securityLevel || 0;
+      const existMedLevel = existingCred.medicalLevel || 0;
+      const existAdminLevel = existingCred.adminLevel || 0;
+      
+      return existSecLevel <= newSecLevel &&
+             existMedLevel <= newMedLevel &&
+             existAdminLevel <= newAdminLevel &&
+             (existSecLevel < newSecLevel ||
+              existMedLevel < newMedLevel ||
+              existAdminLevel < newAdminLevel);
+    });
   }
 
   async removeCredentialFromUser(userId: number, credentialId: number): Promise<boolean> {
-    const userCredentialEntries = Array.from(this.userCredentials.entries())
-      .filter(([_, uc]) => uc.userId === userId && uc.credentialId === credentialId);
+    // Check if the credential exists for this user
+    const userCreds = await db
+      .select()
+      .from(userCredentials)
+      .where(
+        and(
+          eq(userCredentials.userId, userId),
+          eq(userCredentials.credentialId, credentialId)
+        )
+      );
     
-    if (userCredentialEntries.length > 0) {
-      for (const [id, _] of userCredentialEntries) {
-        this.userCredentials.delete(id);
-      }
-      return true;
+    if (userCreds.length === 0) {
+      return false;
     }
     
-    return false;
+    // Delete the credential
+    await db
+      .delete(userCredentials)
+      .where(
+        and(
+          eq(userCredentials.userId, userId),
+          eq(userCredentials.credentialId, credentialId)
+        )
+      );
+    
+    return true;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
