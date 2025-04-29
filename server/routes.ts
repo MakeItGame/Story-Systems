@@ -427,30 +427,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
     
     try {
-      const { title, code, content, securityLevel, medicalLevel, adminLevel, status } = req.body;
+      // Use documentCode in both request and database to maintain consistency
+      const { title, documentCode, content, securityLevel, medicalLevel, adminLevel, author, hasImages, images, relatedDocuments } = req.body;
       
       // Check if document code already exists
-      const existingDoc = await storage.getDocumentByCode(code);
+      const existingDoc = await storage.getDocumentByCode(documentCode);
       if (existingDoc) {
         return res.status(409).json({ message: "Document code already exists" });
       }
       
-      // Create document
+      // Create document using the correct field names from schema
       const document = await storage.createDocument({
         title,
-        documentCode: code,
+        documentCode,
         content,
         securityLevel: securityLevel || 0,
         medicalLevel: medicalLevel || 0,
         adminLevel: adminLevel || 0,
-        author: req.user.username
+        author: author || req.user.username,
+        hasImages: hasImages || false,
+        images: images || [],
+        relatedDocuments: relatedDocuments || []
       });
       
-      console.log(`New document created by admin: ${code}: ${title}`);
+      console.log(`New document created by admin: ${documentCode}: ${title}`);
       res.status(201).json(document);
     } catch (error) {
       console.error("Error creating document:", error);
       res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+  
+  // Get a single document by ID (admin)
+  app.get("/api/admin/documents/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid document ID" });
+    
+    try {
+      const document = await storage.getDocument(id);
+      if (!document) return res.status(404).json({ message: "Document not found" });
+      
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: "Failed to fetch document" });
+    }
+  });
+  
+  // Update a document (admin)
+  app.put("/api/admin/documents/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid document ID" });
+    
+    try {
+      const document = await storage.getDocument(id);
+      if (!document) return res.status(404).json({ message: "Document not found" });
+      
+      const { title, documentCode, content, securityLevel, medicalLevel, adminLevel } = req.body;
+      
+      // If document code is being changed, check if it already exists
+      if (documentCode && documentCode !== document.documentCode) {
+        const existingDoc = await storage.getDocumentByCode(documentCode);
+        if (existingDoc && existingDoc.id !== id) {
+          return res.status(409).json({ message: "Document code already exists" });
+        }
+      }
+      
+      // Update the document
+      const updatedDocument = await storage.updateDocument(id, {
+        title,
+        documentCode,
+        content,
+        securityLevel,
+        medicalLevel,
+        adminLevel
+      });
+      
+      console.log(`Document updated by admin: ${documentCode}: ${title}`);
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+  
+  // Delete a document (admin)
+  app.delete("/api/admin/documents/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid document ID" });
+    
+    try {
+      const document = await storage.getDocument(id);
+      if (!document) return res.status(404).json({ message: "Document not found" });
+      
+      // Delete the document (this function needs to be added to the storage class)
+      await db.delete(documents).where(eq(documents.id, id));
+      
+      console.log(`Document deleted by admin: ${document.documentCode}: ${document.title}`);
+      res.json({ message: "Document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
     }
   });
   
