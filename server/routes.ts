@@ -20,19 +20,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
       
-      // Update the user in the database
-      // Note: In a real app, we would update these fields in the user record
-      // Since we have limited user fields in our schema, we'll just acknowledge the request
+      // Log the update attempt
       console.log(`Profile update for user ${userId}:`, { username, email, displayName });
+      
+      // Check if username is already taken (if changing)
+      if (username && username !== req.user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "Username is already taken" });
+        }
+      }
+      
+      // Update the user in the database
+      const updatedUser = await storage.updateUser(userId, {
+        username: username || req.user.username
+        // Note: email and displayName are not in our current schema,
+        // so we're just updating the username for now
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update the session
+      req.user = updatedUser;
       
       // Return success
       res.status(200).json({ 
         message: "Profile updated successfully",
-        user: {
-          ...req.user,
-          username: username || req.user.username,
-          // We don't have email and displayName fields in our schema currently
-        }
+        user: updatedUser
       });
     } catch (error) {
       console.error("Error updating profile:", error);

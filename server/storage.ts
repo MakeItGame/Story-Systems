@@ -15,6 +15,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   updateUserLastLogin(id: number): Promise<User | undefined>;
   
   // Document operations
@@ -135,6 +136,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...userData
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+  
   async updateUserLastLogin(id: number): Promise<User | undefined> {
     const [updatedUser] = await db
       .update(users)
@@ -171,26 +183,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<Document> {
-    // Extract and prepare document values
-    const documentData = {
-      documentCode: insertDocument.documentCode,
-      title: insertDocument.title,
-      content: insertDocument.content,
-      securityLevel: insertDocument.securityLevel ?? 0,
-      medicalLevel: insertDocument.medicalLevel ?? 0,
-      adminLevel: insertDocument.adminLevel ?? 0,
-      author: insertDocument.author,
-      hasImages: insertDocument.hasImages ?? false,
-      // Ensure these are valid JSON objects
-      images: insertDocument.images ?? [],
-      relatedDocuments: insertDocument.relatedDocuments ?? []
-    };
-    
     try {
-      // Insert the document
+      // Parse the document data correctly to match expected types
       const [document] = await db
         .insert(documents)
-        .values(documentData)
+        .values({
+          documentCode: insertDocument.documentCode,
+          title: insertDocument.title,
+          content: insertDocument.content,
+          securityLevel: insertDocument.securityLevel ?? 0,
+          medicalLevel: insertDocument.medicalLevel ?? 0,
+          adminLevel: insertDocument.adminLevel ?? 0,
+          author: insertDocument.author,
+          hasImages: insertDocument.hasImages ?? false,
+          images: JSON.stringify(insertDocument.images ?? []), // Ensure proper JSON serialization
+          relatedDocuments: JSON.stringify(insertDocument.relatedDocuments ?? [])
+        })
         .returning();
       return document;
     } catch (error) {
@@ -207,7 +215,6 @@ export class DatabaseStorage implements IStorage {
       .update(documents)
       .set({
         ...documentData,
-        updatedAt: new Date(),
         revisionNumber: (existingDocument.revisionNumber || 0) + 1
       })
       .where(eq(documents.id, id))
