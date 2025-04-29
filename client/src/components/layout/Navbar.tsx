@@ -1,0 +1,234 @@
+import { useState, useEffect } from "react";
+import { useLocation, Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { InGameLoginModal } from "@/components/modal/InGameLoginModal";
+import { Credential } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function Navbar() {
+  const [location] = useLocation();
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
+  const [showInGameLoginModal, setShowInGameLoginModal] = useState(false);
+  
+  // Fetch user credentials
+  const { data: credentials = [], refetch: refetchCredentials } = useQuery<(Credential & { isSelected: boolean })[]>({
+    queryKey: ["/api/credentials"],
+    enabled: !!user
+  });
+
+  // Get the currently selected credential
+  const selectedCredential = credentials.find(cred => cred.isSelected);
+
+  // Handle credential selection
+  const handleSelectCredential = async (credentialId: number) => {
+    try {
+      await apiRequest("POST", `/api/credentials/select/${credentialId}`);
+      refetchCredentials();
+      toast({
+        title: "Credential switched",
+        description: "You have switched to a different credential.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to switch credential",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  return (
+    <header className="bg-primary border-b border-gray-800 sticky top-0 z-40">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Link to="/">
+              <div className="flex-shrink-0 flex items-center">
+                <span className="text-accent font-bold text-xl mr-1">[</span>
+                <span className="text-foreground font-bold text-xl">REDACTED</span>
+                <span className="text-accent font-bold text-xl ml-1">]</span>
+                <span className="text-gray-500 text-xs ml-2">v0.9.3</span>
+              </div>
+            </Link>
+          </div>
+          
+          {user && (
+            <div className="flex items-center gap-4">
+              {/* Current Login Display */}
+              <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center px-3 py-2 bg-secondary hover:bg-gray-800 rounded border border-gray-700 transition-colors duration-200">
+                      <div className="mr-2">
+                        <div className="flex items-center">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          <span className="text-sm font-medium">
+                            {selectedCredential?.displayName || "visitor_temporary"}
+                          </span>
+                        </div>
+                        <div className="flex space-x-1 mt-1">
+                          <span className="inline-block px-1.5 py-0.5 bg-blue-900 text-xs rounded text-white">
+                            S:{selectedCredential?.securityLevel || 0}
+                          </span>
+                          <span className="inline-block px-1.5 py-0.5 bg-green-900 text-xs rounded text-white">
+                            M:{selectedCredential?.medicalLevel || 0}
+                          </span>
+                          <span className="inline-block px-1.5 py-0.5 bg-gray-700 text-xs rounded text-white">
+                            A:{selectedCredential?.adminLevel || 0}
+                          </span>
+                        </div>
+                      </div>
+                      <i className="ri-arrow-down-s-line"></i>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-secondary rounded border border-gray-700 shadow-lg animate-slide-in-top">
+                    <div className="py-2 px-3 border-b border-gray-700">
+                      <p className="text-xs text-gray-400">AVAILABLE CREDENTIALS</p>
+                    </div>
+                    <div className="py-2 max-h-60 overflow-y-auto">
+                      {credentials.map(cred => (
+                        <DropdownMenuItem 
+                          key={cred.id}
+                          onClick={() => handleSelectCredential(cred.id)}
+                          className="block px-4 py-2 hover:bg-gray-700 transition-colors duration-150 cursor-pointer"
+                        >
+                          <div className="flex items-center">
+                            <span className={`inline-block w-2 h-2 ${cred.isSelected ? 'bg-green-500' : 'bg-gray-500'} rounded-full mr-2`}></span>
+                            <span className="text-sm font-medium">{cred.displayName}</span>
+                          </div>
+                          <div className="flex space-x-1 mt-1">
+                            <span className="inline-block px-1.5 py-0.5 bg-blue-900 text-xs rounded text-white">
+                              S:{cred.securityLevel}
+                            </span>
+                            <span className="inline-block px-1.5 py-0.5 bg-green-900 text-xs rounded text-white">
+                              M:{cred.medicalLevel}
+                            </span>
+                            <span className="inline-block px-1.5 py-0.5 bg-gray-700 text-xs rounded text-white">
+                              A:{cred.adminLevel}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator className="border-t border-gray-700" />
+                    <div className="py-2 px-3">
+                      <Button 
+                        variant="link" 
+                        onClick={() => setShowInGameLoginModal(true)}
+                        className="w-full text-center text-xs text-accent hover:text-red-400 transition-colors duration-150"
+                      >
+                        + ADD NEW CREDENTIAL
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <div className="h-8 border-l border-gray-700"></div>
+              
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center px-3 py-2 hover:bg-gray-800 rounded transition-colors duration-200">
+                    <span className="text-sm font-medium mr-2">{user.username}</span>
+                    <i className="ri-user-line"></i>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 bg-secondary rounded border border-gray-700 shadow-lg animate-slide-in-top">
+                  <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
+                    Help
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="border-gray-700" />
+                  <DropdownMenuItem 
+                    className="block px-4 py-2 text-sm text-accent hover:bg-gray-700 cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+        
+        {/* Navigation */}
+        {user && (
+          <nav className="py-2">
+            <ul className="flex space-x-6 text-sm">
+              <li>
+                <Link to="/documents">
+                  <a className={`${location === '/documents' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 font-medium`}>
+                    Documents
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/personnel">
+                  <a className={`${location === '/personnel' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
+                    Personnel
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/terminals">
+                  <a className={`${location === '/terminals' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
+                    Terminals
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/messages">
+                  <a className={`${location === '/messages' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
+                    Messages
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/progress">
+                  <a className={`${location === '/progress' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
+                    Progress
+                  </a>
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {showInGameLoginModal && (
+          <InGameLoginModal 
+            onClose={() => setShowInGameLoginModal(false)} 
+            onCredentialAdded={() => {
+              refetchCredentials();
+              setShowInGameLoginModal(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
