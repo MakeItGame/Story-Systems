@@ -313,10 +313,48 @@ export default function AdminDocumentsPage() {
     }
   };
   
+  // Handle document duplication
+  const handleDuplicateDocument = (document: Document) => {
+    const duplicateData = {
+      title: `${document.title} (Copy)`,
+      documentCode: `${document.documentCode}-copy`,
+      content: document.content,
+      securityLevel: document.securityLevel ?? 0,
+      medicalLevel: document.medicalLevel ?? 0,
+      adminLevel: document.adminLevel ?? 0,
+      author: document.author
+    };
+    
+    createForm.reset(duplicateData);
+    setIsAddDocumentOpen(true);
+    
+    toast({
+      title: "Document duplicated",
+      description: "Fill in any additional details and click Save to create the duplicate.",
+    });
+  };
+  
   // Handle document status change
   const handleChangeStatus = (id: number, newStatus: "published" | "draft" | "archived") => {
-    // In a real app, this would make an API call
+    // In a real app, this would make an API call to update the status
     console.log("Changing document status:", id, newStatus);
+    
+    // Get the document by ID
+    const document = documents.find(doc => doc.id === id);
+    if (!document) return;
+    
+    // Update the document with the new status
+    // This is just a mock implementation - in a real app we would use a mutation
+    editDocumentMutation.mutate({
+      id,
+      title: document.title,
+      documentCode: document.documentCode,
+      content: document.content,
+      securityLevel: document.securityLevel ?? 0,
+      medicalLevel: document.medicalLevel ?? 0, 
+      adminLevel: document.adminLevel ?? 0,
+      // status field would be added to schema in a real implementation
+    });
     
     toast({
       title: "Status updated",
@@ -670,7 +708,10 @@ export default function AdminDocumentsPage() {
                                   Edit
                                 </DropdownMenuItem>
                                 
-                                <DropdownMenuItem className="flex items-center cursor-pointer">
+                                <DropdownMenuItem 
+                                  className="flex items-center cursor-pointer"
+                                  onClick={() => handleDuplicateDocument(document)}
+                                >
                                   <Copy className="h-4 w-4 mr-2" />
                                   Duplicate
                                 </DropdownMenuItem>

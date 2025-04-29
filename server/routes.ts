@@ -3,9 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
-import { insertCredentialSchema } from "@shared/schema";
+import { insertCredentialSchema, documents } from "@shared/schema";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Password utility functions
 const scryptAsync = promisify(scrypt);
