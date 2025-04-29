@@ -327,7 +327,6 @@ export default function ProgressPage() {
                       <Progress 
                         value={(progressSummary.totalTerminalsAccessed / 5) * 100} 
                         className="h-2 bg-secondary" 
-                        indicatorClassName="bg-yellow-600" 
                       />
                     </div>
                     
@@ -339,7 +338,6 @@ export default function ProgressPage() {
                       <Progress 
                         value={(progressSummary.totalAchievementsUnlocked / progressSummary.totalAchievements) * 100} 
                         className="h-2 bg-secondary" 
-                        indicatorClassName="bg-purple-600" 
                       />
                     </div>
                   </CardContent>
