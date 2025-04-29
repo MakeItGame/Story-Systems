@@ -98,83 +98,107 @@ export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }
                 ))}
               </div>
             ) : (
-              <ul className="space-y-1">
-                {filteredDocuments?.map(doc => (
-                  <motion.li 
-                    key={doc.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <a 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onSelectDocument(doc);
-                      }}
-                      className={`block p-2 rounded bg-secondary ${selectedDocumentId === doc.id ? 'border-l-4 border-accent border-t border-r border-b border-gray-700' : 'border border-gray-700'} hover:border-accent transition-colors duration-200`}
-                    >
-                      <div className="flex items-start">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{doc.title}</p>
-                          <div className="flex items-center mt-1">
-                            <span className="text-xs text-gray-500 mr-2">{doc.documentCode}</span>
-                            <div className="flex space-x-1">
-                              {(doc.securityLevel || 0) > 0 && (
-                                <span className="inline-block px-1 py-0.5 bg-blue-900 text-xs rounded-sm text-white">
-                                  S:{doc.securityLevel}+
-                                </span>
-                              )}
-                              {(doc.medicalLevel || 0) > 0 && (
-                                <span className="inline-block px-1 py-0.5 bg-green-900 text-xs rounded-sm text-white">
-                                  M:{doc.medicalLevel}+
-                                </span>
-                              )}
-                              {(doc.adminLevel || 0) > 0 && (
-                                <span className="inline-block px-1 py-0.5 bg-gray-700 text-xs rounded-sm text-white">
-                                  A:{doc.adminLevel}+
-                                </span>
-                              )}
+              <>
+                {filteredDocuments && filteredDocuments.length > 0 ? (
+                  <ul className="space-y-1">
+                    {filteredDocuments.map(doc => (
+                      <motion.li 
+                        key={doc.id}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <a 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onSelectDocument(doc);
+                          }}
+                          className={`block p-2 rounded bg-secondary ${selectedDocumentId === doc.id ? 'border-l-4 border-accent border-t border-r border-b border-gray-700' : 'border border-gray-700'} hover:border-accent transition-colors duration-200`}
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{doc.title}</p>
+                              <div className="flex items-center mt-1">
+                                <span className="text-xs text-gray-500 mr-2">{doc.documentCode}</span>
+                                <div className="flex space-x-1">
+                                  {(doc.securityLevel || 0) > 0 && (
+                                    <span className="inline-block px-1 py-0.5 bg-blue-900 text-xs rounded-sm text-white">
+                                      S:{doc.securityLevel}+
+                                    </span>
+                                  )}
+                                  {(doc.medicalLevel || 0) > 0 && (
+                                    <span className="inline-block px-1 py-0.5 bg-green-900 text-xs rounded-sm text-white">
+                                      M:{doc.medicalLevel}+
+                                    </span>
+                                  )}
+                                  {(doc.adminLevel || 0) > 0 && (
+                                    <span className="inline-block px-1 py-0.5 bg-gray-700 text-xs rounded-sm text-white">
+                                      A:{doc.adminLevel}+
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </a>
-                  </motion.li>
-                ))}
-              </ul>
+                        </a>
+                      </motion.li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 border border-dashed border-gray-700 rounded-md bg-secondary/50 text-center">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-8 w-8 mx-auto text-gray-500 mb-2" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-400 mb-1">No documents accessible</p>
+                    <p className="text-xs text-gray-500">Find additional credentials to access more documents</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
           
           <div className="p-4 border-t border-gray-800">
             <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Recently Viewed</h3>
-            <ul className="space-y-1">
-              {recentDocuments.map(doc => (
-                <li key={`recent-${doc.id}`}>
-                  <a 
-                    href="#" 
-                    className="block p-2 text-sm text-gray-400 hover:text-foreground hover:bg-gray-800 rounded"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onSelectDocument(doc);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4 mr-2 text-gray-500" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>{doc.title}</span>
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {recentDocuments.length > 0 ? (
+              <ul className="space-y-1">
+                {recentDocuments.map(doc => (
+                  <li key={`recent-${doc.id}`}>
+                    <a 
+                      href="#" 
+                      className="block p-2 text-sm text-gray-400 hover:text-foreground hover:bg-gray-800 rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onSelectDocument(doc);
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className="h-4 w-4 mr-2 text-gray-500" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>{doc.title}</span>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-xs text-gray-500">History will appear here as you browse documents</p>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

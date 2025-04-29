@@ -397,8 +397,11 @@ export default function AdminCredentialsPage() {
                           max={5}
                           placeholder="0" 
                           className="bg-background"
-                          {...field} 
+                          value={typeof field.value === 'number' ? field.value : 0}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
