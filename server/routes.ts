@@ -8,6 +8,33 @@ import { insertCredentialSchema } from "@shared/schema";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes (/api/register, /api/login, /api/logout, /api/user)
   setupAuth(app);
+  
+  // Debug endpoint to check existing users
+  app.get("/api/debug/users", async (req, res) => {
+    try {
+      // Get all users without exposing passwords
+      const allUsers = await Promise.all(
+        Array.from(Array(10).keys()).map(async (id) => {
+          const user = await storage.getUser(id + 1);
+          if (user) {
+            return {
+              id: user.id,
+              username: user.username,
+              isAdmin: user.isAdmin
+            };
+          }
+          return null;
+        })
+      );
+      
+      // Filter out nulls (non-existent users)
+      const users = allUsers.filter(user => user !== null);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
 
   // Document routes
   app.get("/api/documents", async (req, res) => {
