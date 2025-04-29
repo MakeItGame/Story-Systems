@@ -407,7 +407,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes
+  // Admin document routes
+  app.get("/api/admin/documents", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    try {
+      // Fetch all documents
+      const documents = await storage.getDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+  
+  app.post("/api/admin/documents", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    try {
+      const { title, code, content, securityLevel, medicalLevel, adminLevel, status } = req.body;
+      
+      // Check if document code already exists
+      const existingDoc = await storage.getDocumentByCode(code);
+      if (existingDoc) {
+        return res.status(409).json({ message: "Document code already exists" });
+      }
+      
+      // Create document
+      const document = await storage.createDocument({
+        title,
+        documentCode: code,
+        content,
+        securityLevel: securityLevel || 0,
+        medicalLevel: medicalLevel || 0,
+        adminLevel: adminLevel || 0,
+        status,
+        author: req.user.username,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        revisionNumber: 1
+      });
+      
+      console.log(`New document created by admin: ${code}: ${title}`);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+  
+  // Admin user routes
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });

@@ -33,6 +33,7 @@ export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }
       return response.json();
     },
     enabled: !!selectedCredential,
+    staleTime: 0, // Always refetch on component mount
   });
   
   const filteredDocuments = documents?.filter(doc => 
