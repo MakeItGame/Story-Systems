@@ -159,6 +159,11 @@ export default function Navbar() {
                       Profile
                     </DropdownMenuItem>
                   </Link>
+                  <Link to="/admin">
+                    <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
+                      Admin Panel
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
                     Settings
                   </DropdownMenuItem>

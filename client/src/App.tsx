@@ -12,6 +12,9 @@ import TerminalsPage from "@/pages/terminals-page";
 import MessagesPage from "@/pages/messages-page";
 import ProgressPage from "@/pages/progress-page";
 import ProfilePage from "@/pages/profile-page";
+import AdminDashboardPage from "@/pages/admin/dashboard-page";
+import AdminUsersPage from "@/pages/admin/users-page";
+import AdminDocumentsPage from "@/pages/admin/documents-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Route } from "wouter";
@@ -19,6 +22,7 @@ import { Route } from "wouter";
 function Router() {
   return (
     <Switch>
+      {/* User Routes */}
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/documents" component={DocumentsPage} />
       <ProtectedRoute path="/personnel" component={PersonnelPage} />
@@ -26,6 +30,13 @@ function Router() {
       <ProtectedRoute path="/messages" component={MessagesPage} />
       <ProtectedRoute path="/progress" component={ProgressPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
+      
+      {/* Admin Routes */}
+      <ProtectedRoute path="/admin" component={AdminDashboardPage} />
+      <ProtectedRoute path="/admin/users" component={AdminUsersPage} />
+      <ProtectedRoute path="/admin/documents" component={AdminDocumentsPage} />
+      
+      {/* Auth and Not Found */}
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
