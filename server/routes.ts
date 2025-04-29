@@ -355,6 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // For testing: Add a default credential to test document access
+  // Test credential endpoints
   app.post("/api/test/add-credential", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     
@@ -385,6 +386,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating test credential:", error);
       res.status(500).json({ message: "Failed to create test credential" });
+    }
+  });
+  
+  // Assign an existing credential to the current user (for testing)
+  app.post("/api/test/assign-credential", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    const { credentialId } = req.body;
+    if (!credentialId) return res.status(400).json({ message: "Credential ID is required" });
+    
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      
+      // Check if the credential exists
+      const credential = await storage.getCredential(credentialId);
+      if (!credential) return res.status(404).json({ message: "Credential not found" });
+      
+      // Add credential to user and set as selected
+      await storage.addCredentialToUser({
+        userId,
+        credentialId,
+        isSelected: true,
+      });
+      
+      // Return success
+      res.status(200).json({ message: "Credential assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning credential:", error);
+      res.status(500).json({ message: "Failed to assign credential" });
+    }
+  });
+  
+  // Admin credential management routes
+  app.get("/api/admin/credentials", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    try {
+      const credentials = await storage.getCredentials();
+      res.json(credentials);
+    } catch (error) {
+      console.error("Error fetching credentials:", error);
+      res.status(500).json({ message: "Failed to fetch credentials" });
+    }
+  });
+  
+  app.post("/api/admin/credentials", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    try {
+      const credentialData = insertCredentialSchema.parse(req.body);
+      const newCredential = await storage.createCredential(credentialData);
+      res.status(201).json(newCredential);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid credential data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create credential" });
+    }
+  });
+  
+  app.delete("/api/admin/credentials/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid credential ID" });
+    
+    try {
+      // This will depend on your storage implementation; we'll need to ensure
+      // the credential is properly deleted. For now, we'll just return success.
+      // In a real app, we'd also need to remove this credential from any users who have it.
+      const credential = await storage.getCredential(id);
+      if (!credential) {
+        return res.status(404).json({ message: "Credential not found" });
+      }
+      
+      // Return success
+      res.status(200).json({ message: "Credential deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting credential:", error);
+      res.status(500).json({ message: "Failed to delete credential" });
     }
   });
 

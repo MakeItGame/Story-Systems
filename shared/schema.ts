@@ -60,6 +60,7 @@ export const credentials = pgTable("credentials", {
   securityLevel: integer("security_level").default(0),
   medicalLevel: integer("medical_level").default(0),
   adminLevel: integer("admin_level").default(0),
+  notes: text("notes"),
   isActive: boolean("is_active").default(true),
   discoveredAt: timestamp("discovered_at").defaultNow().notNull(),
 });
@@ -71,6 +72,7 @@ export const insertCredentialSchema = createInsertSchema(credentials).pick({
   securityLevel: true,
   medicalLevel: true,
   adminLevel: true,
+  notes: true,
 });
 
 // User-Credentials relation schema
