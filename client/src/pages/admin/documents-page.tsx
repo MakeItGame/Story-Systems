@@ -212,17 +212,42 @@ export default function AdminDocumentsPage() {
     createDocumentMutation.mutate(data);
   };
   
+  // Edit document mutation
+  const editDocumentMutation = useMutation({
+    mutationFn: async (documentData: DocumentFormValues & { id: number }) => {
+      const res = await apiRequest("PUT", `/api/admin/documents/${documentData.id}`, documentData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate documents query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
+      
+      toast({
+        title: "Document updated",
+        description: `Document ${editForm.getValues().documentCode}: ${editForm.getValues().title} has been updated successfully.`,
+      });
+      
+      editForm.reset();
+      setIsEditDocumentOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating document",
+        description: error.message || "Failed to update document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle document edit
   const onEditSubmit = (data: DocumentFormValues) => {
-    // In a real app, this would make an API call
-    console.log("Updating document:", data);
+    if (!selectedDocument) return;
     
-    toast({
-      title: "Document updated",
-      description: `Document ${data.documentCode}: ${data.title} has been updated.`,
+    // Add the document ID to the data for the API call
+    editDocumentMutation.mutate({
+      ...data,
+      id: selectedDocument.id
     });
-    
-    setIsEditDocumentOpen(false);
   };
   
   // Handle edit button click
@@ -245,16 +270,36 @@ export default function AdminDocumentsPage() {
     setIsViewDocumentOpen(true);
   };
   
+  // Delete document mutation
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/documents/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate documents query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
+      
+      toast({
+        title: "Document deleted",
+        description: "The document has been permanently deleted.",
+        variant: "destructive",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting document",
+        description: error.message || "Failed to delete document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle document deletion
   const handleDeleteDocument = (id: number) => {
-    // In a real app, this would make an API call
-    console.log("Deleting document:", id);
-    
-    toast({
-      title: "Document deleted",
-      description: "The document has been permanently deleted.",
-      variant: "destructive",
-    });
+    if (confirm("Are you sure you want to delete this document? This action cannot be undone.")) {
+      deleteDocumentMutation.mutate(id);
+    }
   };
   
   // Handle document status change
