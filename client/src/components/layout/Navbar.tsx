@@ -165,9 +165,6 @@ export default function Navbar() {
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="block px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer">
                     Help
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="border-gray-700" />

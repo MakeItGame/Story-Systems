@@ -57,7 +57,6 @@ const notificationFormSchema = z.object({
   achievementNotifications: z.boolean().default(true),
   newDocumentAlerts: z.boolean().default(true),
   securityAlerts: z.boolean().default(true),
-  emailNotifications: z.boolean().default(false),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -99,7 +98,6 @@ export default function ProfilePage() {
       achievementNotifications: true,
       newDocumentAlerts: true,
       securityAlerts: true,
-      emailNotifications: false,
     },
   });
   
@@ -527,26 +525,7 @@ export default function ProfilePage() {
                         )}
                       />
                       
-                      <FormField
-                        control={notificationForm.control}
-                        name="emailNotifications"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-3 bg-secondary/50">
-                            <div className="space-y-0.5">
-                              <FormLabel>Email Notifications</FormLabel>
-                              <FormDescription>
-                                Receive important updates via email.
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+
                     </div>
                     
                     <Button type="submit" className="w-full" disabled={updateNotificationsMutation.isPending}>
