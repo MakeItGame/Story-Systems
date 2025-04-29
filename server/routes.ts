@@ -353,6 +353,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to verify credential" });
     }
   });
+  
+  // For testing: Add a default credential to test document access
+  app.post("/api/test/add-credential", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      
+      // Create a test credential with some permissions
+      const credential = await storage.createCredential({
+        username: "test_user",
+        password: "test_password",
+        displayName: "Test User",
+        securityLevel: 1,
+        medicalLevel: 1,
+        adminLevel: 1,
+        notes: "Test credential for document access",
+      });
+      
+      // Add credential to user and set as selected
+      await storage.addCredentialToUser({
+        userId,
+        credentialId: credential.id,
+        isSelected: true,
+      });
+      
+      // Return the credential
+      res.status(201).json(credential);
+    } catch (error) {
+      console.error("Error creating test credential:", error);
+      res.status(500).json({ message: "Failed to create test credential" });
+    }
+  });
 
   app.post("/api/credentials/create", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
