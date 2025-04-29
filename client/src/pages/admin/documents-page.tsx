@@ -82,7 +82,7 @@ const documentSchema = z.object({
   title: z.string().min(3, {
     message: "Title must be at least 3 characters."
   }),
-  code: z.string().min(3, {
+  documentCode: z.string().min(3, {
     message: "Document code must be at least 3 characters."
   }),
   content: z.string().min(10, {
@@ -90,8 +90,7 @@ const documentSchema = z.object({
   }),
   securityLevel: z.number().min(0).max(5),
   medicalLevel: z.number().min(0).max(5),
-  adminLevel: z.number().min(0).max(5),
-  status: z.enum(["published", "draft", "archived"])
+  adminLevel: z.number().min(0).max(5)
 });
 
 type DocumentFormValues = z.infer<typeof documentSchema>;
@@ -604,15 +603,15 @@ export default function AdminDocumentsPage() {
                             <div className="grid grid-cols-3 gap-2">
                               <div className="flex flex-col items-center">
                                 <span className="text-xs text-blue-400 mb-1">S</span>
-                                {renderAccessLevel(document.securityLevel)}
+                                {renderAccessLevel(document.securityLevel ?? 0)}
                               </div>
                               <div className="flex flex-col items-center">
                                 <span className="text-xs text-green-400 mb-1">M</span>
-                                {renderAccessLevel(document.medicalLevel)}
+                                {renderAccessLevel(document.medicalLevel ?? 0)}
                               </div>
                               <div className="flex flex-col items-center">
                                 <span className="text-xs text-purple-400 mb-1">A</span>
-                                {renderAccessLevel(document.adminLevel)}
+                                {renderAccessLevel(document.adminLevel ?? 0)}
                               </div>
                             </div>
                           </TableCell>
@@ -659,35 +658,29 @@ export default function AdminDocumentsPage() {
                                 
                                 <DropdownMenuSeparator className="bg-gray-700" />
                                 
-                                {document.status !== "published" && (
-                                  <DropdownMenuItem 
-                                    className="flex items-center text-green-500 cursor-pointer"
-                                    onClick={() => handleChangeStatus(document.id, "published")}
-                                  >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Publish
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem 
+                                  className="flex items-center text-green-500 cursor-pointer"
+                                  onClick={() => handleChangeStatus(document.id, "published")}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Publish
+                                </DropdownMenuItem>
+                                  
+                                <DropdownMenuItem 
+                                  className="flex items-center text-yellow-500 cursor-pointer"
+                                  onClick={() => handleChangeStatus(document.id, "draft")}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Move to Drafts
+                                </DropdownMenuItem>
                                 
-                                {document.status !== "draft" && (
-                                  <DropdownMenuItem 
-                                    className="flex items-center text-yellow-500 cursor-pointer"
-                                    onClick={() => handleChangeStatus(document.id, "draft")}
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Move to Drafts
-                                  </DropdownMenuItem>
-                                )}
-                                
-                                {document.status !== "archived" && (
-                                  <DropdownMenuItem 
-                                    className="flex items-center text-gray-500 cursor-pointer"
-                                    onClick={() => handleChangeStatus(document.id, "archived")}
-                                  >
-                                    <Lock className="h-4 w-4 mr-2" />
-                                    Archive
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem 
+                                  className="flex items-center text-gray-500 cursor-pointer"
+                                  onClick={() => handleChangeStatus(document.id, "archived")}
+                                >
+                                  <Lock className="h-4 w-4 mr-2" />
+                                  Archive
+                                </DropdownMenuItem>
                                 
                                 <DropdownMenuSeparator className="bg-gray-700" />
                                 
@@ -720,13 +713,13 @@ export default function AdminDocumentsPage() {
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <DialogTitle className="text-2xl text-foreground">{selectedDocument.title}</DialogTitle>
-                  <Badge variant="outline" className={`${getStatusBadgeColor(selectedDocument.status)} capitalize`}>
-                    {selectedDocument.status}
+                  <Badge variant="outline" className="bg-green-500/20 border-green-800 text-green-500 capitalize">
+                    Published
                   </Badge>
                 </div>
                 <DialogDescription className="flex items-center justify-between">
-                  <span>{selectedDocument.code}</span>
-                  <span className="text-xs text-gray-400">Updated: {formatDate(selectedDocument.updatedAt)}</span>
+                  <span>{selectedDocument.documentCode}</span>
+                  <span className="text-xs text-gray-400">Updated: {selectedDocument.updatedAt ? formatDate(selectedDocument.updatedAt.toString()) : formatDate(selectedDocument.createdAt.toString())}</span>
                 </DialogDescription>
               </DialogHeader>
               
@@ -735,22 +728,22 @@ export default function AdminDocumentsPage() {
                   <div className="flex flex-col items-center bg-secondary/50 p-2 rounded-lg border border-gray-700">
                     <span className="text-xs text-blue-400 mb-1">Security Level</span>
                     <div className="flex items-center">
-                      {renderAccessLevel(selectedDocument.securityLevel)}
-                      <span className="ml-2">{selectedDocument.securityLevel}</span>
+                      {renderAccessLevel(selectedDocument.securityLevel ?? 0)}
+                      <span className="ml-2">{selectedDocument.securityLevel ?? 0}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center bg-secondary/50 p-2 rounded-lg border border-gray-700">
                     <span className="text-xs text-green-400 mb-1">Medical Level</span>
                     <div className="flex items-center">
-                      {renderAccessLevel(selectedDocument.medicalLevel)}
-                      <span className="ml-2">{selectedDocument.medicalLevel}</span>
+                      {renderAccessLevel(selectedDocument.medicalLevel ?? 0)}
+                      <span className="ml-2">{selectedDocument.medicalLevel ?? 0}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-center bg-secondary/50 p-2 rounded-lg border border-gray-700">
                     <span className="text-xs text-purple-400 mb-1">Admin Level</span>
                     <div className="flex items-center">
-                      {renderAccessLevel(selectedDocument.adminLevel)}
-                      <span className="ml-2">{selectedDocument.adminLevel}</span>
+                      {renderAccessLevel(selectedDocument.adminLevel ?? 0)}
+                      <span className="ml-2">{selectedDocument.adminLevel ?? 0}</span>
                     </div>
                   </div>
                 </div>
@@ -814,7 +807,7 @@ export default function AdminDocumentsPage() {
                     
                     <FormField
                       control={editForm.control}
-                      name="code"
+                      name="documentCode"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Document Code</FormLabel>
@@ -912,31 +905,7 @@ export default function AdminDocumentsPage() {
                       />
                     </div>
                     
-                    <FormField
-                      control={editForm.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="bg-secondary border-gray-700">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-secondary border-gray-700">
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="published">Published</SelectItem>
-                              <SelectItem value="archived">Archived</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
                   </div>
                   
                   <FormField
