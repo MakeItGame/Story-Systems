@@ -75,7 +75,7 @@ export default function Navbar() {
               <div className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center px-3 py-2 bg-secondary hover:bg-gray-800 rounded border border-gray-700 transition-colors duration-200">
+                    <Button variant="outline" className="flex items-center px-3 py-2 bg-secondary hover:bg-gray-800 rounded border border-gray-700 transition-colors duration-200 h-auto">
                       <div className="mr-2">
                         <div className="flex items-center">
                           <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
@@ -95,7 +95,9 @@ export default function Navbar() {
                           </span>
                         </div>
                       </div>
-                      <i className="ri-arrow-down-s-line"></i>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 bg-secondary rounded border border-gray-700 shadow-lg animate-slide-in-top">
@@ -179,38 +181,43 @@ export default function Navbar() {
           <nav className="py-2">
             <ul className="flex space-x-6 text-sm">
               <li>
-                <Link to="/documents">
-                  <a className={`${location === '/documents' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 font-medium`}>
-                    Documents
-                  </a>
+                <Link 
+                  to="/documents" 
+                  className={`${location === '/documents' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 font-medium block`}
+                >
+                  Documents
                 </Link>
               </li>
               <li>
-                <Link to="/personnel">
-                  <a className={`${location === '/personnel' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
-                    Personnel
-                  </a>
+                <Link 
+                  to="/personnel" 
+                  className={`${location === '/personnel' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 block`}
+                >
+                  Personnel
                 </Link>
               </li>
               <li>
-                <Link to="/terminals">
-                  <a className={`${location === '/terminals' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
-                    Terminals
-                  </a>
+                <Link 
+                  to="/terminals" 
+                  className={`${location === '/terminals' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 block`}
+                >
+                  Terminals
                 </Link>
               </li>
               <li>
-                <Link to="/messages">
-                  <a className={`${location === '/messages' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
-                    Messages
-                  </a>
+                <Link 
+                  to="/messages" 
+                  className={`${location === '/messages' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 block`}
+                >
+                  Messages
                 </Link>
               </li>
               <li>
-                <Link to="/progress">
-                  <a className={`${location === '/progress' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200`}>
-                    Progress
-                  </a>
+                <Link 
+                  to="/progress" 
+                  className={`${location === '/progress' ? 'text-foreground border-accent' : 'text-gray-400 border-transparent hover:border-gray-700'} hover:text-foreground pb-2 border-b-2 transition-colors duration-200 block`}
+                >
+                  Progress
                 </Link>
               </li>
             </ul>
