@@ -100,7 +100,7 @@ export default function AdminDocumentsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-  const [selectedDocument, setSelectedDocument] = useState<AdminDocument | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isAddDocumentOpen, setIsAddDocumentOpen] = useState(false);
   const [isEditDocumentOpen, setIsEditDocumentOpen] = useState(false);
   const [isViewDocumentOpen, setIsViewDocumentOpen] = useState(false);
@@ -150,27 +150,31 @@ export default function AdminDocumentsPage() {
     staleTime: 0, // Always refetch on component mount
   });
   
-  // Filter documents
+  // Filter documents - adapt to our schema
   const filteredDocuments = documents
     .filter(doc => {
       // Filter by search query
       const matchesSearch = 
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.documentCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
         doc.content.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Filter by status
-      const matchesStatus = !statusFilter || doc.status === statusFilter;
+      // Filter by status - currently we don't have status in the schema
+      const matchesStatus = !statusFilter; // Just ignore status for now
       
-      // Filter by tab
+      // Filter by tab - adapt once we have status
       if (activeTab === "all") return matchesSearch && matchesStatus;
-      if (activeTab === "published") return doc.status === "published" && matchesSearch && matchesStatus;
-      if (activeTab === "draft") return doc.status === "draft" && matchesSearch && matchesStatus;
-      if (activeTab === "archived") return doc.status === "archived" && matchesSearch && matchesStatus;
+      // Temporary handling until status is implemented
+      if (activeTab !== "all") return false;
       
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    .sort((a, b) => {
+      // Safely handle nullable fields
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.createdAt).getTime();
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
   
   // Format date
   const formatDate = (dateString: string) => {
@@ -235,22 +239,22 @@ export default function AdminDocumentsPage() {
   };
   
   // Handle edit button click
-  const handleEditDocument = (document: AdminDocument) => {
+  const handleEditDocument = (document: Document) => {
     setSelectedDocument(document);
     editForm.reset({
       title: document.title,
-      code: document.code,
+      code: document.documentCode,
       content: document.content,
-      securityLevel: document.securityLevel,
-      medicalLevel: document.medicalLevel,
-      adminLevel: document.adminLevel,
-      status: document.status as "published" | "draft" | "archived"
+      securityLevel: document.securityLevel ?? 0,
+      medicalLevel: document.medicalLevel ?? 0,
+      adminLevel: document.adminLevel ?? 0,
+      status: "published" // Default to published as we don't have status field yet
     });
     setIsEditDocumentOpen(true);
   };
   
   // Handle view button click
-  const handleViewDocument = (document: AdminDocument) => {
+  const handleViewDocument = (document: Document) => {
     setSelectedDocument(document);
     setIsViewDocumentOpen(true);
   };
@@ -279,7 +283,7 @@ export default function AdminDocumentsPage() {
   };
   
   // Get status badge color
-  const getStatusBadgeColor = (status: AdminDocument["status"]) => {
+  const getStatusBadgeColor = (status: string | undefined) => {
     switch (status) {
       case "published":
         return "bg-green-500/20 border-green-800 text-green-500";
@@ -593,7 +597,7 @@ export default function AdminDocumentsPage() {
                                 <FileText className="h-4 w-4 mr-2 text-accent" />
                                 <span className="font-medium">{document.title}</span>
                               </div>
-                              <span className="text-xs text-gray-400">{document.code}</span>
+                              <span className="text-xs text-gray-400">{document.documentCode}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -613,15 +617,15 @@ export default function AdminDocumentsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={`${getStatusBadgeColor(document.status)} capitalize`}>
-                              {document.status}
+                            <Badge variant="outline" className={`bg-green-500/20 border-green-800 text-green-500 capitalize`}>
+                              Published
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-gray-400">
-                            {formatDate(document.updatedAt)}
+                            {document.updatedAt ? formatDate(document.updatedAt.toString()) : formatDate(document.createdAt.toString())}
                           </TableCell>
                           <TableCell className="text-sm font-medium">
-                            {document.views.toLocaleString()}
+                            0
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
