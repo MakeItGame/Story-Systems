@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Document } from "@shared/schema";
+import { Document, Credential } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,25 +14,28 @@ type DocumentSidebarProps = {
 export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }: DocumentSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Fetch documents based on the current user's selected credential permissions
-  const { data: credentials } = useQuery<any>({
+  // Fetch credentials with proper typing
+  const { data: credentials = [] } = useQuery<(Credential & { isSelected: boolean })[]>({
     queryKey: ["/api/credentials"],
   });
   
-  const selectedCredential = credentials?.find((cred: any) => cred.isSelected);
+  // Find the selected credential
+  const selectedCredential = credentials.find(cred => cred.isSelected);
   
+  // Set clearance levels (default to 0 if no credential is selected)
   const securityLevel = selectedCredential?.securityLevel || 0;
   const medicalLevel = selectedCredential?.medicalLevel || 0;
   const adminLevel = selectedCredential?.adminLevel || 0;
   
-  const { data: documents, isLoading } = useQuery<Document[]>({
+  // Fetch accessible documents based on clearance
+  const { data: documents = [], isLoading } = useQuery<Document[]>({
     queryKey: ["/api/documents/accessible", securityLevel, medicalLevel, adminLevel],
     queryFn: async () => {
       const response = await fetch(`/api/documents/accessible?securityLevel=${securityLevel}&medicalLevel=${medicalLevel}&adminLevel=${adminLevel}`);
       if (!response.ok) throw new Error("Failed to fetch documents");
       return response.json();
     },
-    enabled: !!selectedCredential,
+    enabled: true, // Always enabled, will just return empty if no credentials
     staleTime: 0, // Always refetch on component mount
   });
   

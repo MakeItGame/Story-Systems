@@ -184,20 +184,20 @@ export class DatabaseStorage implements IStorage {
 
   async createDocument(insertDocument: InsertDocument): Promise<Document> {
     try {
-      // Parse the document data correctly to match expected types
+      // Using the same field names as defined in the schema
       const [document] = await db
         .insert(documents)
         .values({
-          documentCode: insertDocument.documentCode,
           title: insertDocument.title,
+          documentCode: insertDocument.documentCode,
           content: insertDocument.content,
           securityLevel: insertDocument.securityLevel ?? 0,
           medicalLevel: insertDocument.medicalLevel ?? 0,
           adminLevel: insertDocument.adminLevel ?? 0,
           author: insertDocument.author,
           hasImages: insertDocument.hasImages ?? false,
-          images: JSON.stringify(insertDocument.images ?? []), // Ensure proper JSON serialization
-          relatedDocuments: JSON.stringify(insertDocument.relatedDocuments ?? [])
+          images: insertDocument.images ?? [],
+          relatedDocuments: insertDocument.relatedDocuments ?? []
         })
         .returning();
       return document;
