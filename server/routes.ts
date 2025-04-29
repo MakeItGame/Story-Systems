@@ -515,13 +515,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (isNaN(id)) return res.status(400).json({ message: "Invalid credential ID" });
     
     try {
-      // This will depend on your storage implementation; we'll need to ensure
-      // the credential is properly deleted. For now, we'll just return success.
-      // In a real app, we'd also need to remove this credential from any users who have it.
+      // Get the credential first
       const credential = await storage.getCredential(id);
       if (!credential) {
         return res.status(404).json({ message: "Credential not found" });
       }
+      
+      // Actually delete the credential from the database
+      const result = await db.delete(credentials)
+        .where(eq(credentials.id, id))
+        .returning();
+      
+      console.log(`Credential deleted: ${credential.username}`);
       
       // Return success
       res.status(200).json({ message: "Credential deleted successfully" });

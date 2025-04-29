@@ -69,19 +69,7 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
   // Check if there's a permission error
   const accessError = error?.status === 403 ? error.data : null;
 
-  // Fetch related documents only if we have permission to the main document
-  const { data: relatedDocuments } = useQuery<Document[]>({
-    queryKey: ['/api/documents/accessible'],
-    queryFn: async () => {
-      // Use the same access levels as the selected credential
-      const response = await fetch('/api/documents/accessible');
-      if (!response.ok) throw new Error("Failed to fetch related documents");
-      return response.json();
-    },
-    select: (docs) => 
-      docs.filter(doc => document?.relatedDocuments?.includes(doc.id)),
-    enabled: !!document?.relatedDocuments?.length && !accessError,
-  });
+  // Removed related documents functionality as requested
 
   // Simulate finding a credential when clicking on certain document elements
   const handleDiscoverCredential = () => {
