@@ -38,8 +38,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Search, 
   Plus, 
@@ -181,18 +182,39 @@ export default function AdminUsersPage() {
     return date.toLocaleString();
   };
   
+  // Set up queryClient
+  const queryClient = useQueryClient();
+  
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: CreateUserFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/users", userData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      
+      toast({
+        title: "User created",
+        description: `User ${form.getValues().username} has been created successfully.`,
+      });
+      
+      form.reset();
+      setIsAddUserOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating user",
+        description: error.message || "Failed to create user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Handle user creation
   const onSubmit = (data: CreateUserFormValues) => {
-    // In a real app, this would make an API call
-    console.log("Creating user:", data);
-    
-    toast({
-      title: "User created",
-      description: `User ${data.username} has been created successfully.`,
-    });
-    
-    form.reset();
-    setIsAddUserOpen(false);
+    createUserMutation.mutate(data);
   };
   
   // User action handlers
