@@ -206,7 +206,7 @@ export default function AdminCredentialsPage() {
                     <TableCell className="font-mono">{credential.username}</TableCell>
                     <TableCell>{credential.displayName}</TableCell>
                     <TableCell>
-                      {credential.securityLevel > 0 ? (
+                      {credential.securityLevel && credential.securityLevel > 0 ? (
                         <span className="inline-block px-2 py-1 bg-blue-900 text-xs rounded text-white">
                           {credential.securityLevel}
                         </span>
@@ -215,7 +215,7 @@ export default function AdminCredentialsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {credential.medicalLevel > 0 ? (
+                      {credential.medicalLevel && credential.medicalLevel > 0 ? (
                         <span className="inline-block px-2 py-1 bg-green-900 text-xs rounded text-white">
                           {credential.medicalLevel}
                         </span>
@@ -224,7 +224,7 @@ export default function AdminCredentialsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {credential.adminLevel > 0 ? (
+                      {credential.adminLevel && credential.adminLevel > 0 ? (
                         <span className="inline-block px-2 py-1 bg-gray-700 text-xs rounded text-white">
                           {credential.adminLevel}
                         </span>
@@ -347,8 +347,11 @@ export default function AdminCredentialsPage() {
                           max={5}
                           placeholder="0" 
                           className="bg-background"
-                          {...field} 
+                          value={typeof field.value === 'number' ? field.value : 0}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -369,8 +372,11 @@ export default function AdminCredentialsPage() {
                           max={5}
                           placeholder="0" 
                           className="bg-background"
-                          {...field} 
+                          value={typeof field.value === 'number' ? field.value : 0}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />

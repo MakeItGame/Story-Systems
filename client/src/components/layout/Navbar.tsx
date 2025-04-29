@@ -21,6 +21,7 @@ export default function Navbar() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [showInGameLoginModal, setShowInGameLoginModal] = useState(false);
+  const [showCredentialChangedNotice, setShowCredentialChangedNotice] = useState(false);
   
   // Fetch user credentials
   const { data: credentials = [], refetch: refetchCredentials } = useQuery<(Credential & { isSelected: boolean })[]>({
@@ -34,11 +35,24 @@ export default function Navbar() {
   // Handle credential selection
   const handleSelectCredential = async (credentialId: number) => {
     try {
+      // Get the current credential info before switching
+      const targetCredential = credentials.find(cred => cred.id === credentialId);
+      if (!targetCredential) return;
+      
       await apiRequest("POST", `/api/credentials/select/${credentialId}`);
       refetchCredentials();
+      
+      // Show the credential changed notice
+      setShowCredentialChangedNotice(true);
+      
+      // Hide notice after 3 seconds
+      setTimeout(() => {
+        setShowCredentialChangedNotice(false);
+      }, 3000);
+      
       toast({
         title: "Credential switched",
-        description: "You have switched to a different credential.",
+        description: `You are now logged in as ${targetCredential.displayName}.`,
       });
     } catch (error) {
       toast({
@@ -117,13 +131,13 @@ export default function Navbar() {
                           </div>
                           <div className="flex space-x-1 mt-1">
                             <span className="inline-block px-1.5 py-0.5 bg-blue-900 text-xs rounded text-white">
-                              S:{cred.securityLevel}
+                              S:{cred.securityLevel || 0}
                             </span>
                             <span className="inline-block px-1.5 py-0.5 bg-green-900 text-xs rounded text-white">
-                              M:{cred.medicalLevel}
+                              M:{cred.medicalLevel || 0}
                             </span>
                             <span className="inline-block px-1.5 py-0.5 bg-gray-700 text-xs rounded text-white">
-                              A:{cred.adminLevel}
+                              A:{cred.adminLevel || 0}
                             </span>
                           </div>
                         </DropdownMenuItem>
@@ -236,8 +250,44 @@ export default function Navbar() {
             onCredentialAdded={() => {
               refetchCredentials();
               setShowInGameLoginModal(false);
+              setShowCredentialChangedNotice(true);
+              setTimeout(() => setShowCredentialChangedNotice(false), 3000);
             }}
           />
+        )}
+        
+        {/* Credential Change Notification */}
+        {showCredentialChangedNotice && selectedCredential && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ type: "spring", damping: 15 }}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm border border-accent rounded-lg shadow-lg px-6 py-4 z-50 min-w-[300px]"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="bg-accent/20 rounded-full p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-medium">Access Level Changed</p>
+                <p className="text-gray-300 text-sm">Now using: {selectedCredential.displayName}</p>
+                <div className="flex space-x-2 mt-1">
+                  <span className="inline-block px-1.5 py-0.5 bg-blue-900 text-xs rounded text-white">
+                    S:{selectedCredential.securityLevel || 0}
+                  </span>
+                  <span className="inline-block px-1.5 py-0.5 bg-green-900 text-xs rounded text-white">
+                    M:{selectedCredential.medicalLevel || 0}
+                  </span>
+                  <span className="inline-block px-1.5 py-0.5 bg-gray-700 text-xs rounded text-white">
+                    A:{selectedCredential.adminLevel || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>
