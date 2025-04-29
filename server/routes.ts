@@ -218,14 +218,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/documents/accessible", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     
-    const securityLevel = parseInt(req.query.securityLevel as string) || 0;
-    const medicalLevel = parseInt(req.query.medicalLevel as string) || 0;
-    const adminLevel = parseInt(req.query.adminLevel as string) || 0;
-    
     try {
+      // Determine user's current credential levels
+      let securityLevel = 0;
+      let medicalLevel = 0;
+      let adminLevel = 0;
+      
+      // Get the user's credentials
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      
+      // If query parameters are provided, use those values (for direct API calls)
+      if (req.query.securityLevel || req.query.medicalLevel || req.query.adminLevel) {
+        securityLevel = parseInt(req.query.securityLevel as string) || 0;
+        medicalLevel = parseInt(req.query.medicalLevel as string) || 0;
+        adminLevel = parseInt(req.query.adminLevel as string) || 0;
+        
+        console.log("Using provided credential levels:", { securityLevel, medicalLevel, adminLevel });
+      } else {
+        // Otherwise, get the user's selected credential
+        const userCredentials = await storage.getUserCredentials(userId);
+        const selectedCredential = userCredentials.find(cred => cred.isSelected);
+        
+        if (selectedCredential) {
+          securityLevel = selectedCredential.securityLevel ?? 0;
+          medicalLevel = selectedCredential.medicalLevel ?? 0;
+          adminLevel = selectedCredential.adminLevel ?? 0;
+          
+          console.log("Using selected credential levels:", {
+            credentialId: selectedCredential.id,
+            securityLevel, 
+            medicalLevel, 
+            adminLevel
+          });
+        } else {
+          console.log("No credential selected, using default levels (0)");
+        }
+      }
+      
       const documents = await storage.getAccessibleDocuments(securityLevel, medicalLevel, adminLevel);
       res.json(documents);
     } catch (error) {
+      console.error("Error fetching accessible documents:", error);
       res.status(500).json({ message: "Failed to fetch accessible documents" });
     }
   });

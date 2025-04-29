@@ -15,8 +15,11 @@ export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }
   const [searchQuery, setSearchQuery] = useState("");
   
   // Fetch credentials with proper typing
-  const { data: credentials = [] } = useQuery<(Credential & { isSelected: boolean })[]>({
+  const { data: credentials = [], status: credentialsStatus } = useQuery<(Credential & { isSelected: boolean })[]>({
     queryKey: ["/api/credentials"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000, // Poll every 5 seconds to ensure we have the latest credentials
   });
   
   // Find the selected credential
@@ -27,10 +30,14 @@ export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }
   const medicalLevel = selectedCredential?.medicalLevel || 0;
   const adminLevel = selectedCredential?.adminLevel || 0;
   
+  // Log for debugging
+  console.log("Current credential levels:", { securityLevel, medicalLevel, adminLevel });
+  
   // Fetch accessible documents based on clearance
-  const { data: documents = [], isLoading } = useQuery<Document[]>({
+  const { data: documents = [], isLoading, refetch: refetchDocuments } = useQuery<Document[]>({
     queryKey: ["/api/documents/accessible", securityLevel, medicalLevel, adminLevel],
     queryFn: async () => {
+      console.log("Fetching documents with levels:", { securityLevel, medicalLevel, adminLevel });
       const response = await fetch(`/api/documents/accessible?securityLevel=${securityLevel}&medicalLevel=${medicalLevel}&adminLevel=${adminLevel}`);
       if (!response.ok) throw new Error("Failed to fetch documents");
       return response.json();

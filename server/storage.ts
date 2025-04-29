@@ -172,14 +172,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAccessibleDocuments(secLevel: number, medLevel: number, adminLevel: number): Promise<Document[]> {
+    console.log(`Checking document access with credentials: Security=${secLevel}, Medical=${medLevel}, Admin=${adminLevel}`);
+    
     const allDocs = await db.select().from(documents);
     
     // Filter manually since SQL comparison with nullable fields can be tricky
-    return allDocs.filter(doc => 
-      (doc.securityLevel === null || doc.securityLevel <= secLevel) &&
-      (doc.medicalLevel === null || doc.medicalLevel <= medLevel) &&
-      (doc.adminLevel === null || doc.adminLevel <= adminLevel)
-    );
+    const accessibleDocs = allDocs.filter(doc => {
+      // Get the required levels, defaulting to 0 for null values
+      const requiredSecLevel = doc.securityLevel ?? 0;
+      const requiredMedLevel = doc.medicalLevel ?? 0;
+      const requiredAdminLevel = doc.adminLevel ?? 0;
+      
+      // Check if user has sufficient clearance for all required levels
+      const hasAccess = 
+        secLevel >= requiredSecLevel &&
+        medLevel >= requiredMedLevel &&
+        adminLevel >= requiredAdminLevel;
+      
+      if (!hasAccess) {
+        console.log(`Document ${doc.id} (${doc.documentCode}) denied: requires S${requiredSecLevel}/M${requiredMedLevel}/A${requiredAdminLevel}`);
+      }
+      
+      return hasAccess;
+    });
+    
+    console.log(`Found ${accessibleDocs.length} accessible documents out of ${allDocs.length} total`);
+    return accessibleDocs;
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<Document> {
@@ -239,6 +257,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCredential(insertCredential: InsertCredential): Promise<Credential> {
+    console.log("Creating credential with data:", insertCredential);
     const [credential] = await db
       .insert(credentials)
       .values({
@@ -248,10 +267,12 @@ export class DatabaseStorage implements IStorage {
         securityLevel: insertCredential.securityLevel ?? 0,
         medicalLevel: insertCredential.medicalLevel ?? 0,
         adminLevel: insertCredential.adminLevel ?? 0,
+        notes: insertCredential.notes || null,
         isActive: true,
         discoveredAt: new Date()
       })
       .returning();
+    console.log("Created credential:", credential);
     return credential;
   }
 
