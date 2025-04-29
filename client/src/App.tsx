@@ -11,6 +11,7 @@ import PersonnelPage from "@/pages/personnel-page";
 import TerminalsPage from "@/pages/terminals-page";
 import MessagesPage from "@/pages/messages-page";
 import ProgressPage from "@/pages/progress-page";
+import ProfilePage from "@/pages/profile-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Route } from "wouter";
@@ -24,6 +25,7 @@ function Router() {
       <ProtectedRoute path="/terminals" component={TerminalsPage} />
       <ProtectedRoute path="/messages" component={MessagesPage} />
       <ProtectedRoute path="/progress" component={ProgressPage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
