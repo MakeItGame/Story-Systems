@@ -39,9 +39,22 @@ export default function TerminalsPage() {
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Simulate fetching terminal data
+  // Fetch current user's credentials
+  const { data: credentials = [] } = useQuery<(any & { isSelected: boolean })[]>({
+    queryKey: ["/api/credentials"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000, // Poll periodically to ensure we have latest credentials
+  });
+  
+  // Find selected credential and determine security level
+  const selectedCredential = credentials.find(cred => cred.isSelected);
+  const securityLevel = selectedCredential?.securityLevel || 0;
+  console.log("Current security level for terminals:", securityLevel);
+  
+  // Simulate fetching terminal data with security level filter
   const { data: terminals = [] } = useQuery<Terminal[]>({
-    queryKey: ["/api/terminals"],
+    queryKey: ["/api/terminals", securityLevel], // Add securityLevel to query key to trigger re-fetch when it changes
     queryFn: async () => {
       // Mock data
       const mockData: Terminal[] = [

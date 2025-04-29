@@ -33,9 +33,22 @@ export default function MessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Simulate fetching messages
+  // Fetch current user's credentials
+  const { data: credentials = [] } = useQuery<(any & { isSelected: boolean })[]>({
+    queryKey: ["/api/credentials"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000, // Poll periodically to ensure we have latest credentials
+  });
+  
+  // Find selected credential and determine security level
+  const selectedCredential = credentials.find(cred => cred.isSelected);
+  const securityLevel = selectedCredential?.securityLevel || 0;
+  console.log("Current security level for messages:", securityLevel);
+  
+  // Simulate fetching messages with security level filter
   const { data: messages = [], isLoading } = useQuery<Message[]>({
-    queryKey: ["/api/messages"],
+    queryKey: ["/api/messages", securityLevel], // Add securityLevel to query key to trigger re-fetch when it changes
     queryFn: async () => {
       // Mock data
       const mockData: Message[] = [
@@ -281,16 +294,17 @@ Human Resources`,
                 className="bg-primary rounded-lg border border-gray-800 h-full relative"
               >
                 {/* Access denied overlay for insufficient clearance */}
-                {selectedMessage.securityLevel > 1 && (
+                {selectedMessage.securityLevel > securityLevel && (
                   <div className="absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-10 p-6">
                     <AlertTriangle className="h-20 w-20 text-accent mb-6" />
                     <h2 className="text-2xl font-bold text-white mb-2">CLASSIFIED CONTENT</h2>
                     <p className="text-gray-400 text-center mb-4">
-                      Your current security clearance is insufficient to view this message.
+                      Your current security clearance (Level {securityLevel}) is insufficient to view this message.
                     </p>
                     <div className="bg-secondary/50 p-4 rounded border border-gray-700 font-mono text-sm mb-4 w-full max-w-md">
                       <p className="text-accent mb-1">{'>'} ERROR: CLEARANCE LEVEL MISMATCH</p>
                       <p className="text-yellow-500 mb-1">{'>'} REQUIRED: LEVEL {selectedMessage.securityLevel}</p>
+                      <p className="text-green-500 mb-1">{'>'} CURRENT: LEVEL {securityLevel}</p>
                       <p className="text-foreground">{'>'} CONTACT SUPERVISOR FOR ACCESS</p>
                     </div>
                     <Button 

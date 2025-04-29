@@ -32,10 +32,23 @@ export default function PersonnelPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedPersonnel, setSelectedPersonnel] = useState<PersonnelFile | null>(null);
   
+  // Fetch current user's credentials
+  const { data: credentials = [] } = useQuery<(any & { isSelected: boolean })[]>({
+    queryKey: ["/api/credentials"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000, // Poll periodically to ensure we have latest credentials
+  });
+  
+  // Find selected credential and determine security level
+  const selectedCredential = credentials.find(cred => cred.isSelected);
+  const securityLevel = selectedCredential?.securityLevel || 0;
+  console.log("Current security level for personnel:", securityLevel);
+  
   // In a real application, this would be fetched from the server
   // Based on the user's credentials
   const { data: personnelFiles = [], isLoading } = useQuery<PersonnelFile[]>({
-    queryKey: ["/api/personnel"],
+    queryKey: ["/api/personnel", securityLevel], // Add securityLevel to query key to trigger re-fetch when it changes
     // Simulate backend response for now
     queryFn: async () => {
       // Mock data
@@ -87,7 +100,8 @@ export default function PersonnelPage() {
       // Simulate loading time
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      return mockData;
+      // Filter based on security level
+      return mockData.filter(personnel => personnel.securityLevel <= securityLevel);
     }
   });
   
@@ -186,16 +200,17 @@ export default function PersonnelPage() {
                 className="bg-primary rounded-lg border border-gray-800 h-full"
               >
                 {/* Access denied overlay for insufficient clearance */}
-                {selectedPersonnel.securityLevel > 1 && (
+                {selectedPersonnel.securityLevel > securityLevel && (
                   <div className="absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-10 p-6">
                     <ShieldAlert className="h-20 w-20 text-accent mb-6" />
                     <h2 className="text-2xl font-bold text-white mb-2">ACCESS DENIED</h2>
                     <p className="text-gray-400 text-center mb-4">
-                      Your current security clearance (Level 1) is insufficient to access this file.
+                      Your current security clearance (Level {securityLevel}) is insufficient to access this file.
                     </p>
                     <div className="bg-secondary/50 p-4 rounded border border-gray-700 font-mono text-sm mb-4 w-full max-w-md">
                       <p className="text-accent mb-1">{'>'} ERROR: SECURITY CLEARANCE MISMATCH</p>
                       <p className="text-yellow-500 mb-1">{'>'} REQUIRED: LEVEL {selectedPersonnel.securityLevel}</p>
+                      <p className="text-green-500 mb-1">{'>'} CURRENT: LEVEL {securityLevel}</p>
                       <p className="text-foreground">{'>'} SYSTEM: ACCESS_LOG_UPDATED</p>
                     </div>
                     <Button 
