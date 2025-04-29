@@ -632,9 +632,40 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="mt-4">
-                  <Button className="w-full" variant="destructive">
-                    Reset Game Progress
-                  </Button>
+                  <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button className="w-full" variant="destructive">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Reset Game Progress
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-primary border border-gray-700">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-foreground">Reset Game Progress</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. All your in-game credentials, document access history, 
+                          and achievement progress will be reset. Your account will remain intact.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-secondary hover:bg-secondary/80">Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                          onClick={() => resetProgressMutation.mutate()}
+                          disabled={resetProgressMutation.isPending}
+                        >
+                          {resetProgressMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Resetting...
+                            </>
+                          ) : (
+                            "Reset Progress"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <p className="text-xs text-gray-500 text-center mt-2">
                     Warning: This action cannot be undone. All progress will be lost.
                   </p>
