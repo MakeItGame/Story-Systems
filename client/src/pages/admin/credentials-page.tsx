@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 const credentialFormSchema = insertCredentialSchema.extend({
   password: z.string().min(1, "Password is required"),
   displayName: z.string().min(1, "Display name is required"),
+  notes: z.string().optional(),
 });
 
 type CredentialFormValues = z.infer<typeof credentialFormSchema>;

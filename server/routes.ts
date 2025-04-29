@@ -374,12 +374,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: "Test credential for document access",
       });
       
+      console.log("Created test credential:", credential);
+      
       // Add credential to user and set as selected
-      await storage.addCredentialToUser({
+      const userCredential = await storage.addCredentialToUser({
         userId,
         credentialId: credential.id,
         isSelected: true,
       });
+      
+      console.log("Added credential to user:", userCredential);
       
       // Return the credential
       res.status(201).json(credential);
@@ -438,10 +442,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user?.isAdmin) return res.status(403).json({ message: "Forbidden - Admin access required" });
     
     try {
-      const credentialData = insertCredentialSchema.parse(req.body);
-      const newCredential = await storage.createCredential(credentialData);
+      console.log("Received credential data:", req.body);
+      // Make sure we have all required fields
+      const { username, password, displayName, securityLevel, medicalLevel, adminLevel, notes } = req.body;
+      
+      if (!username || !password || !displayName) {
+        return res.status(400).json({ message: "Missing required fields: username, password, and displayName are required" });
+      }
+      
+      // Create the credential manually to avoid schema validation issues
+      const newCredential = await storage.createCredential({
+        username,
+        password,
+        displayName,
+        securityLevel: securityLevel || 0,
+        medicalLevel: medicalLevel || 0,
+        adminLevel: adminLevel || 0,
+        notes: notes || null,
+      });
+      
       res.status(201).json(newCredential);
     } catch (error) {
+      console.error("Error creating credential:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid credential data", errors: error.errors });
       }
