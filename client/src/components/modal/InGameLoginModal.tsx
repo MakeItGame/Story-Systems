@@ -20,6 +20,8 @@ import { Loader2 } from "lucide-react";
 interface InGameLoginModalProps {
   onClose: () => void;
   onCredentialAdded: () => void;
+  prefillUsername?: string;
+  prefillPassword?: string;
 }
 
 const credentialSchema = z.object({
@@ -29,15 +31,15 @@ const credentialSchema = z.object({
 
 type CredentialFormValues = z.infer<typeof credentialSchema>;
 
-export function InGameLoginModal({ onClose, onCredentialAdded }: InGameLoginModalProps) {
+export function InGameLoginModal({ onClose, onCredentialAdded, prefillUsername = "", prefillPassword = "" }: InGameLoginModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<CredentialFormValues>({
     resolver: zodResolver(credentialSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      username: prefillUsername,
+      password: prefillPassword,
     },
   });
 

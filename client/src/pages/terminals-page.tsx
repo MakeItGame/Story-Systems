@@ -36,6 +36,7 @@ export default function TerminalsPage() {
   const [commandHistory, setCommandHistory] = useState<TerminalCommand[]>([]);
   const [currentCommand, setCurrentCommand] = useState("");
   const [showInGameLoginModal, setShowInGameLoginModal] = useState(false);
+  const [emergencyCredentials, setEmergencyCredentials] = useState<{username: string, password: string} | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -177,15 +178,16 @@ export default function TerminalsPage() {
         `Last Maintenance: 2025-04-15`;
     }
     else if (cmd === "ls") {
-      if (activeTerminal.securityLevel > 1) {
-        newCommand.response = "ACCESS DENIED: Insufficient security clearance.";
+      if (activeTerminal.securityLevel > securityLevel) {
+        newCommand.response = `ACCESS DENIED: Insufficient security clearance. Current level: ${securityLevel}, Required level: ${activeTerminal.securityLevel}`;
         newCommand.isError = true;
       } else {
         newCommand.response = "Available files:\n" +
           "- readme.txt\n" +
           "- facility_map.dat\n" +
           "- maintenance_logs.txt\n" +
-          "- security_protocol.pdf [LOCKED]";
+          `${securityLevel >= 2 ? "- security_protocol.pdf\n" : "- security_protocol.pdf [LOCKED]\n"}` +
+          `${securityLevel >= 3 ? "- restricted_access.dat" : ""}`;
       }
     }
     else if (cmd.startsWith("cat ")) {
@@ -208,6 +210,48 @@ export default function TerminalsPage() {
           "2025-04-03: Replaced faulty power supply in Server Room B.\n" +
           "2025-03-28: Security camera #47 repaired.\n" +
           "2025-03-25: [REDACTED] containment protocols updated.";
+      }
+      else if (file === "security_protocol.pdf") {
+        if (securityLevel < 2) {
+          newCommand.response = "ACCESS DENIED: Insufficient security clearance. Level 2 access required.";
+          newCommand.isError = true;
+        } else {
+          newCommand.response = "SECURITY PROTOCOLS - CLASSIFIED\n\n" +
+            "1. All personnel must wear identification badges at all times.\n" +
+            "2. Access to containment areas requires minimum Level 3 clearance.\n" +
+            "3. Emergency protocols may be initiated by Level 4+ personnel only.\n" +
+            "4. Use of lethal force is authorized for containment breaches of Class 3 or higher.\n" +
+            "5. All incidents involving [REDACTED] must be reported directly to the Site Director.\n\n" +
+            "Note: Additional security measures may be implemented without prior notice as needed.";
+        }
+      }
+      else if (file === "restricted_access.dat") {
+        if (securityLevel < 3) {
+          newCommand.response = "ACCESS DENIED: Insufficient security clearance. Level 3 access required.";
+          newCommand.isError = true;
+        } else {
+          newCommand.response = "EMERGENCY CREDENTIALS RETRIEVED\n\n" +
+            "---- EMERGENCY USE ONLY ----\n" +
+            "The following administrator credentials can be used in case of a facility lockdown:\n\n" +
+            "Username: emergency_override\n" +
+            "Password: SCP-facility-2025-contingency\n\n" +
+            "WARNING: Usage of these credentials is logged and must be justified to the Ethics Committee.";
+            
+          // Auto-discover emergency credentials
+          setTimeout(() => {
+            // Set the emergency credentials to be automatically filled in the login modal
+            setEmergencyCredentials({
+              username: "emergency_override",
+              password: "SCP-facility-2025-contingency"
+            });
+            setShowInGameLoginModal(true);
+            toast({
+              title: "Credential Discovery",
+              description: "You've found emergency administrator credentials in the system. Add them to your collection?",
+              variant: "default",
+            });
+          }, 3000); // Show the discovery modal after a short delay
+        }
       }
       else {
         newCommand.response = `File not found: ${file}`;
@@ -278,10 +322,10 @@ export default function TerminalsPage() {
                 key={terminal.id} 
                 className="bg-primary border-gray-800 hover:bg-primary/70 transition-colors cursor-pointer"
                 onClick={() => {
-                  if (terminal.securityLevel > 1) {
+                  if (terminal.securityLevel > securityLevel) {
                     toast({
                       title: "Access Denied",
-                      description: "Insufficient security clearance. Try finding a higher level credential.",
+                      description: `Security clearance Level ${securityLevel} insufficient. This terminal requires Level ${terminal.securityLevel}.`,
                       variant: "destructive",
                     });
                     setShowInGameLoginModal(true);
@@ -395,13 +439,19 @@ export default function TerminalsPage() {
       
       {showInGameLoginModal && (
         <InGameLoginModal
-          onClose={() => setShowInGameLoginModal(false)}
+          prefillUsername={emergencyCredentials?.username || ""}
+          prefillPassword={emergencyCredentials?.password || ""}
+          onClose={() => {
+            setShowInGameLoginModal(false);
+            setEmergencyCredentials(null); // Clear emergency credentials when modal is closed
+          }}
           onCredentialAdded={() => {
             toast({
               title: "New Credential Added",
               description: "You've discovered a new login credential!",
             });
             setShowInGameLoginModal(false);
+            setEmergencyCredentials(null); // Clear emergency credentials after adding
           }}
         />
       )}
