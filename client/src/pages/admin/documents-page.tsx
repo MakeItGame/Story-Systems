@@ -110,12 +110,11 @@ export default function AdminDocumentsPage() {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       title: "",
-      code: "",
+      documentCode: "",
       content: "",
       securityLevel: 1,
       medicalLevel: 0,
-      adminLevel: 0,
-      status: "draft"
+      adminLevel: 0
     }
   });
   
@@ -124,12 +123,11 @@ export default function AdminDocumentsPage() {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       title: "",
-      code: "",
+      documentCode: "",
       content: "",
       securityLevel: 1,
       medicalLevel: 0,
-      adminLevel: 0,
-      status: "published"
+      adminLevel: 0
     }
   });
   
@@ -193,7 +191,7 @@ export default function AdminDocumentsPage() {
       
       toast({
         title: "Document created",
-        description: `Document ${createForm.getValues().code}: ${createForm.getValues().title} has been created successfully.`,
+        description: `Document ${createForm.getValues().documentCode}: ${createForm.getValues().title} has been created successfully.`,
       });
       
       createForm.reset();
@@ -210,18 +208,8 @@ export default function AdminDocumentsPage() {
   
   // Handle document creation
   const onCreateSubmit = (data: DocumentFormValues) => {
-    // Map the form data to match the API expectations
-    const apiData = {
-      title: data.title,
-      documentCode: data.code, // Map code to documentCode
-      content: data.content,
-      securityLevel: data.securityLevel, 
-      medicalLevel: data.medicalLevel,
-      adminLevel: data.adminLevel,
-      status: data.status
-    };
-    
-    createDocumentMutation.mutate(apiData as any);
+    // The form data already matches our API expectations
+    createDocumentMutation.mutate(data);
   };
   
   // Handle document edit
@@ -231,7 +219,7 @@ export default function AdminDocumentsPage() {
     
     toast({
       title: "Document updated",
-      description: `Document ${data.code}: ${data.title} has been updated.`,
+      description: `Document ${data.documentCode}: ${data.title} has been updated.`,
     });
     
     setIsEditDocumentOpen(false);
@@ -242,12 +230,11 @@ export default function AdminDocumentsPage() {
     setSelectedDocument(document);
     editForm.reset({
       title: document.title,
-      code: document.documentCode,
+      documentCode: document.documentCode,
       content: document.content,
       securityLevel: document.securityLevel ?? 0,
       medicalLevel: document.medicalLevel ?? 0,
-      adminLevel: document.adminLevel ?? 0,
-      status: "published" // Default to published as we don't have status field yet
+      adminLevel: document.adminLevel ?? 0
     });
     setIsEditDocumentOpen(true);
   };
@@ -379,7 +366,7 @@ export default function AdminDocumentsPage() {
                         
                         <FormField
                           control={createForm.control}
-                          name="code"
+                          name="documentCode"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Document Code</FormLabel>
@@ -480,31 +467,7 @@ export default function AdminDocumentsPage() {
                           />
                         </div>
                         
-                        <FormField
-                          control={createForm.control}
-                          name="status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Status</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange} 
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="bg-secondary border-gray-700">
-                                    <SelectValue placeholder="Status" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="bg-secondary border-gray-700">
-                                  <SelectItem value="draft">Draft</SelectItem>
-                                  <SelectItem value="published">Published</SelectItem>
-                                  <SelectItem value="archived">Archived</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+
                       </div>
                       
                       <FormField
