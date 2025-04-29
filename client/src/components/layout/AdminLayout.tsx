@@ -20,6 +20,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
+  // Check for admin access
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-accent mx-auto mb-4" />
+          <p className="text-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect if not authenticated or not an admin
+  if (!user || !user.isAdmin) {
+    return <Redirect to="/" />;
+  }
+  
   const handleLogout = () => {
     logoutMutation.mutate();
   };

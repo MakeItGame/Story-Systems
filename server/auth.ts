@@ -71,6 +71,7 @@ export function setupAuth(app: Express) {
     const user = await storage.createUser({
       ...req.body,
       password: await hashPassword(req.body.password),
+      isAdmin: false, // Ensure new users are not admins by default
     });
 
     req.login(user, (err) => {
