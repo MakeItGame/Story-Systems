@@ -46,8 +46,21 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
+      console.log(`Login attempt for username: ${username}`);
       const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
+      
+      if (!user) {
+        console.log(`User ${username} not found`);
+        return done(null, false);
+      }
+      
+      console.log(`User found: ${JSON.stringify({ id: user.id, username: user.username, isAdmin: user.isAdmin })}`);
+      console.log(`Stored password format: ${user.password.substring(0, 20)}...`);
+      
+      const passwordMatch = await comparePasswords(password, user.password);
+      console.log(`Password match result: ${passwordMatch}`);
+      
+      if (!passwordMatch) {
         return done(null, false);
       } else {
         await storage.updateUserLastLogin(user.id);
@@ -80,8 +93,30 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    console.log(`Login request received for: ${req.body.username}`);
+    
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Authentication failed - no user returned");
+        return res.status(401).json({ message: "Authentication failed" });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login error:", loginErr);
+          return next(loginErr);
+        }
+        
+        console.log(`Login successful for user: ${user.username}`);
+        return res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
