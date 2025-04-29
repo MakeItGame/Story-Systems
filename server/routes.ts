@@ -45,6 +45,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const document = await storage.getDocument(id);
       if (!document) return res.status(404).json({ message: "Document not found" });
+      
+      // Get the user's selected credential
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      
+      const userCredentials = await storage.getUserCredentials(userId);
+      const selectedCredential = userCredentials.find(cred => cred.isSelected);
+      
+      if (!selectedCredential) {
+        return res.status(403).json({ 
+          message: "Access denied - No credential selected",
+          accessDenied: true,
+          requiredLevels: {
+            security: document.securityLevel,
+            medical: document.medicalLevel,
+            admin: document.adminLevel
+          }
+        });
+      }
+      
+      // Check if user has sufficient permissions
+      const hasSecurityAccess = (selectedCredential.securityLevel || 0) >= (document.securityLevel || 0);
+      const hasMedicalAccess = (selectedCredential.medicalLevel || 0) >= (document.medicalLevel || 0);
+      const hasAdminAccess = (selectedCredential.adminLevel || 0) >= (document.adminLevel || 0);
+      
+      if (!hasSecurityAccess || !hasMedicalAccess || !hasAdminAccess) {
+        return res.status(403).json({ 
+          message: "Access denied - Insufficient permissions",
+          accessDenied: true,
+          requiredLevels: {
+            security: document.securityLevel,
+            medical: document.medicalLevel,
+            admin: document.adminLevel
+          },
+          currentLevels: {
+            security: selectedCredential.securityLevel,
+            medical: selectedCredential.medicalLevel,
+            admin: selectedCredential.adminLevel
+          }
+        });
+      }
+      
+      // User has sufficient permissions, return the document
       res.json(document);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch document" });

@@ -13,29 +13,55 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Shield, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 type DocumentViewerProps = {
   documentId: number | null;
   onCredentialAdded: () => void;
 };
 
+interface AccessDeniedError {
+  message: string;
+  accessDenied: boolean;
+  requiredLevels: {
+    security: number | null;
+    medical: number | null;
+    admin: number | null;
+  };
+  currentLevels?: {
+    security: number;
+    medical: number;
+    admin: number;
+  };
+}
+
 export default function DocumentViewer({ documentId, onCredentialAdded }: DocumentViewerProps) {
   const [showInGameLoginModal, setShowInGameLoginModal] = useState(false);
   const [showCredentialFoundModal, setShowCredentialFoundModal] = useState(false);
   const [foundCredential, setFoundCredential] = useState<any>(null);
+  const { user } = useAuth();
 
   // Fetch the selected document
-  const { data: document, isLoading } = useQuery<Document>({
+  const { 
+    data: document, 
+    isLoading, 
+    error 
+  } = useQuery<Document, { status: number; data: AccessDeniedError }>({
     queryKey: [`/api/documents/${documentId}`],
     enabled: !!documentId,
+    retry: false, // Don't retry on permission errors
   });
 
-  // Fetch related documents
+  // Check if there's a permission error
+  const accessError = error?.status === 403 ? error.data : null;
+
+  // Fetch related documents only if we have permission to the main document
   const { data: relatedDocuments } = useQuery<Document[]>({
     queryKey: ['/api/documents'],
     select: (docs) => 
       docs.filter(doc => document?.relatedDocuments?.includes(doc.id)),
-    enabled: !!document?.relatedDocuments?.length,
+    enabled: !!document?.relatedDocuments?.length && !accessError,
   });
 
   // Simulate finding a credential when clicking on certain document elements
@@ -59,6 +85,104 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
           <p className="text-muted-foreground text-sm">Select a document from the sidebar to view its contents.</p>
         </div>
       </div>
+    );
+  }
+
+  // Show access denied errors
+  if (accessError) {
+    return (
+      <motion.div 
+        className="flex-1 overflow-auto document-fade-in"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="container mx-auto p-6 max-w-4xl">
+          <div className="bg-red-900/20 border border-red-900/50 rounded-lg p-8 text-center flex flex-col items-center justify-center">
+            <Lock className="h-16 w-16 text-red-500 mb-4" />
+            <h2 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h2>
+            <p className="text-gray-300 mb-6 max-w-md">{accessError.message}</p>
+            
+            <div className="bg-background/50 border border-gray-800 rounded-lg p-6 mb-4 w-full max-w-md">
+              <h3 className="text-sm font-medium text-foreground mb-4 border-b border-gray-800 pb-2">REQUIRED CLEARANCE</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {accessError.requiredLevels.security > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm">Security: Level {accessError.requiredLevels.security}</span>
+                  </div>
+                )}
+                
+                {accessError.requiredLevels.medical > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8h-1V6c0-2.21-1.79-4-4-4h-2C8.79 2 7 3.79 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H8.9V6z"/>
+                      <path d="M13 15.5V17m-2-4.5v4" />
+                    </svg>
+                    <span className="text-sm">Medical: Level {accessError.requiredLevels.medical}</span>
+                  </div>
+                )}
+                
+                {accessError.requiredLevels.admin > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <span className="text-sm">Admin: Level {accessError.requiredLevels.admin}</span>
+                  </div>
+                )}
+              </div>
+              
+              {accessError.currentLevels && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-foreground mb-4 border-b border-gray-800 pb-2">YOUR CURRENT CLEARANCE</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Shield className={`h-4 w-4 ${(accessError.currentLevels.security || 0) >= (accessError.requiredLevels.security || 0) ? 'text-blue-500' : 'text-gray-600'}`} />
+                      <span className="text-sm">Security: Level {accessError.currentLevels.security || 0}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${(accessError.currentLevels.medical || 0) >= (accessError.requiredLevels.medical || 0) ? 'text-green-500' : 'text-gray-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 8h-1V6c0-2.21-1.79-4-4-4h-2C8.79 2 7 3.79 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H8.9V6z"/>
+                        <path d="M13 15.5V17m-2-4.5v4" />
+                      </svg>
+                      <span className="text-sm">Medical: Level {accessError.currentLevels.medical || 0}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${(accessError.currentLevels.admin || 0) >= (accessError.requiredLevels.admin || 0) ? 'text-gray-400' : 'text-gray-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span className="text-sm">Admin: Level {accessError.currentLevels.admin || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-400 mb-6">
+              You need higher clearance to access this document. <br />
+              Search for additional credentials throughout the system to gain access.
+            </p>
+            
+            <Button
+              onClick={() => setShowInGameLoginModal(true)}
+              variant="outline"
+              className="border-red-900/50 hover:bg-red-900/20 hover:border-red-900"
+            >
+              Try Another Credential
+            </Button>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
@@ -93,6 +217,18 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
     );
   }
 
+  // Make sure document exists
+  if (!document) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-background p-6">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-foreground mb-2">Document Not Found</h3>
+          <p className="text-muted-foreground text-sm">The document you're looking for could not be found.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       className="flex-1 overflow-auto document-fade-in"
@@ -106,13 +242,13 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center mb-2">
-                {document.medicalLevel > 0 && (
+                {(document.medicalLevel || 0) > 0 && (
                   <span className="text-xs bg-green-900 text-white px-2 py-0.5 rounded-sm mr-2">MEDICAL</span>
                 )}
-                {document.securityLevel > 0 && (
+                {(document.securityLevel || 0) > 0 && (
                   <span className="text-xs bg-blue-900 text-white px-2 py-0.5 rounded-sm mr-2">SECURITY</span>
                 )}
-                {document.adminLevel > 0 && (
+                {(document.adminLevel || 0) > 0 && (
                   <span className="text-xs bg-gray-700 text-white px-2 py-0.5 rounded-sm mr-2">ADMIN</span>
                 )}
                 <span className="text-xs bg-yellow-800 text-white px-2 py-0.5 rounded-sm">SENSITIVE</span>
