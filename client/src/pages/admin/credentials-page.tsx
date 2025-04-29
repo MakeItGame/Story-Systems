@@ -124,8 +124,15 @@ export default function AdminCredentialsPage() {
     },
   });
 
-  const onSubmit = (data: CredentialFormValues) => {
-    createCredentialMutation.mutate(data);
+  const onSubmit = (data: any) => {
+    // Convert any string numbers to actual numbers
+    const formattedData = {
+      ...data,
+      securityLevel: Number(data.securityLevel) || 0,
+      medicalLevel: Number(data.medicalLevel) || 0,
+      adminLevel: Number(data.adminLevel) || 0,
+    };
+    createCredentialMutation.mutate(formattedData);
   };
 
   const confirmDelete = (credential: Credential) => {
