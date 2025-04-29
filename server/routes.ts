@@ -443,11 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         securityLevel: securityLevel || 0,
         medicalLevel: medicalLevel || 0,
         adminLevel: adminLevel || 0,
-        status,
-        author: req.user.username,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        revisionNumber: 1
+        author: req.user.username
       });
       
       console.log(`New document created by admin: ${code}: ${title}`);

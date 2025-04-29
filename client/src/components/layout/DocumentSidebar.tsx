@@ -110,17 +110,17 @@ export default function DocumentSidebar({ onSelectDocument, selectedDocumentId }
                           <div className="flex items-center mt-1">
                             <span className="text-xs text-gray-500 mr-2">{doc.documentCode}</span>
                             <div className="flex space-x-1">
-                              {doc.securityLevel > 0 && (
+                              {(doc.securityLevel || 0) > 0 && (
                                 <span className="inline-block px-1 py-0.5 bg-blue-900 text-xs rounded-sm text-white">
                                   S:{doc.securityLevel}+
                                 </span>
                               )}
-                              {doc.medicalLevel > 0 && (
+                              {(doc.medicalLevel || 0) > 0 && (
                                 <span className="inline-block px-1 py-0.5 bg-green-900 text-xs rounded-sm text-white">
                                   M:{doc.medicalLevel}+
                                 </span>
                               )}
-                              {doc.adminLevel > 0 && (
+                              {(doc.adminLevel || 0) > 0 && (
                                 <span className="inline-block px-1 py-0.5 bg-gray-700 text-xs rounded-sm text-white">
                                   A:{doc.adminLevel}+
                                 </span>

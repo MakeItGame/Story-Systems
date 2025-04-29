@@ -48,8 +48,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Search, 
   Plus, 
@@ -139,151 +140,20 @@ export default function AdminDocumentsPage() {
     }
   });
   
+  // Setup queryClient for mutations
+  const queryClient = useQueryClient();
+  
   // Fetch documents
-  const { data: documents = [], isLoading } = useQuery<AdminDocument[]>({
+  const { data: documents = [], isLoading } = useQuery<Document[]>({
     queryKey: ["/api/admin/documents"],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        {
-          id: 1,
-          title: "SCP-173: The Sculpture",
-          code: "SCP-173",
-          content: `**Item #:** SCP-173
-
-**Object Class:** Euclid
-
-**Special Containment Procedures:** Item SCP-173 is to be kept in a locked container at all times. When personnel must enter SCP-173's container, no fewer than 3 may enter at any time and the door is to be relocked behind them. At all times, two persons must maintain direct eye contact with SCP-173 until all personnel have vacated and relocked the container.
-
-**Description:** Moved to Site-19 in 1993. Origin is as yet unknown. It is constructed from concrete and rebar with traces of Krylon brand spray paint. SCP-173 is animate and extremely hostile. The object cannot move while within a direct line of sight. Line of sight must not be broken at any time with SCP-173. Personnel assigned to enter container are instructed to alert one another before blinking. Object is reported to attack by snapping the neck at the base of the skull, or by strangulation. In case of attack, personnel are to observe Class 4 hazardous object containment procedures.
-
-Personnel report sounds of scraping stone originating from within the container when no one is present inside. This is considered normal, and any change in this behaviour should be reported to the acting HMCL supervisor on duty.
-
-The reddish brown substance on the floor is a combination of feces and blood. Origin of these materials is unknown. The enclosure must be cleaned on a bi-weekly basis.`,
-          securityLevel: 1,
-          medicalLevel: 0,
-          adminLevel: 0,
-          createdAt: "2025-01-15T10:00:00",
-          updatedAt: "2025-03-22T14:30:00",
-          createdBy: "admin",
-          status: "published",
-          views: 345
-        },
-        {
-          id: 2,
-          title: "SCP-682: Hard-to-Destroy Reptile",
-          code: "SCP-682",
-          content: `**Item #:** SCP-682
-
-**Object Class:** Keter
-
-**Special Containment Procedures:** SCP-682 must be destroyed as soon as possible. At this time, no means available to SCP teams are capable of destroying SCP-682, only able to cause damage to its physical form. SCP-682 should be contained within a 5 m x 5 m x 5 m chamber with 25 cm reinforced acid-resistant steel plate lining all inside surfaces. The containment chamber should be filled with hydrochloric acid until SCP-682 is submerged and incapacitated. Any attempts of SCP-682 to move, speak, or breach containment should be reacted to quickly and with full force as called for by the circumstances.
-
-**Description:** SCP-682 is a large, vaguely reptilian creature of unknown origin. It appears to be extremely intelligent, and was observed to engage in complex communication with SCP-079 during their limited time of exposure. SCP-682 appears to have a hatred of all life, which has been expressed in several interviews during containment.
-
-SCP-682 has always been observed to have extremely high strength, speed, and reflexes, though exact levels vary with its form. SCP-682's physical body grows and changes very quickly, growing or decreasing in size as it consumes or sheds material. SCP-682 gains energy from anything it ingests, organic or inorganic. Digestion seems to be aided by a set of filtering gills inside of SCP-682's nostrils, which are able to remove usable matter from any liquid solution, enabling it to constantly regenerate from the acid it is contained in. SCP-682's regenerative capabilities and resilience are staggering, and SCP-682 has been seen moving and speaking with its body 87% destroyed or rotted.`,
-          securityLevel: 4,
-          medicalLevel: 3,
-          adminLevel: 3,
-          createdAt: "2025-02-10T11:23:00",
-          updatedAt: "2025-04-15T09:45:00",
-          createdBy: "admin",
-          status: "published",
-          views: 278
-        },
-        {
-          id: 3,
-          title: "Internal Memo: Security Protocols Update",
-          code: "MEM-042",
-          content: `**INTERNAL MEMORANDUM**
-
-**DATE:** April 25, 2025
-**TO:** All Site Personnel
-**FROM:** Security Director
-**SUBJECT:** Updated Security Protocols
-
-Effective immediately, all personnel must adhere to the following revised security protocols:
-
-1. Biometric verification is now required for access to all Level 3 and above areas
-2. Key cards must be visible at all times while on premises
-3. Random security checks will increase in frequency
-4. New emergency response drills will be conducted bi-weekly
-5. All digital communications will be subject to enhanced encryption
-
-These measures are being implemented in response to recent containment breaches. Compliance is mandatory.
-
-**Remember:** Security is everyone's responsibility.`,
-          securityLevel: 1,
-          medicalLevel: 0,
-          adminLevel: 0,
-          createdAt: "2025-04-25T16:00:00",
-          updatedAt: "2025-04-25T16:00:00",
-          createdBy: "security_director",
-          status: "published",
-          views: 124
-        },
-        {
-          id: 4,
-          title: "Project Lazarus: Initial Findings",
-          code: "RES-2301",
-          content: `**PROJECT LAZARUS: INITIAL FINDINGS**
-**CLASSIFIED - LEVEL 4**
-
-Research Team: Dr. ███████, Dr. ██████, Dr. █████
-
-Preliminary testing of SCP-███ on deceased organic matter has yielded unexpected results. The anomalous properties appear to function on a cellular level, with complete reanimation of tissue samples occurring within [REDACTED] minutes of exposure.
-
-Ethical concerns have been raised regarding extended testing. Request for expanded research parameters is pending O5 approval.
-
-**WARNING:** All personnel involved in Project Lazarus must undergo daily psychological evaluation. Report any unusual thoughts or behaviors to medical staff immediately.
-
-**Addendum:** Three research assistants have been removed from the project due to [DATA EXPUNGED]. Investigation ongoing.`,
-          securityLevel: 4,
-          medicalLevel: 3,
-          adminLevel: 2,
-          createdAt: "2025-03-10T09:15:00",
-          updatedAt: "2025-04-20T14:22:00",
-          createdBy: "dr_smith",
-          status: "draft",
-          views: 42
-        },
-        {
-          id: 5,
-          title: "Facility Maintenance Schedule",
-          code: "MAINT-2025-Q2",
-          content: `**FACILITY MAINTENANCE SCHEDULE: Q2 2025**
-
-**APRIL**
-- 04/01: HVAC System Inspection (Sectors A-D)
-- 04/08: Electrical Grid Maintenance (All Sectors)
-- 04/15: Backup Generator Testing
-- 04/22: Water Filtration System Servicing
-- 04/29: Security Camera Network Maintenance
-
-**MAY**
-- 05/06: Containment Cell Integrity Checks (Low Risk)
-- 05/13: Containment Cell Integrity Checks (Medium Risk)
-- 05/20: Containment Cell Integrity Checks (High Risk)
-- 05/27: Emergency System Testing
-
-**JUNE**
-- 06/03: Infrastructure Resilience Assessment
-- 06/10: Decontamination Chamber Servicing
-- 06/17: Hazardous Material Storage Inspection
-- 06/24: Quarterly Full Facility Assessment
-
-All maintenance activities will be performed during designated low-activity periods. Contact Facility Manager with questions or scheduling conflicts.`,
-          securityLevel: 1,
-          medicalLevel: 0,
-          adminLevel: 1,
-          createdAt: "2025-03-28T10:30:00",
-          updatedAt: "2025-03-28T10:30:00",
-          createdBy: "facility_manager",
-          status: "archived",
-          views: 89
-        }
-      ];
-    }
+      const response = await fetch("/api/admin/documents");
+      if (!response.ok) {
+        throw new Error("Failed to fetch documents");
+      }
+      return response.json();
+    },
+    staleTime: 0, // Always refetch on component mount
   });
   
   // Filter documents
@@ -314,18 +184,36 @@ All maintenance activities will be performed during designated low-activity peri
     return date.toLocaleString();
   };
   
+  // Create document mutation
+  const createDocumentMutation = useMutation({
+    mutationFn: async (documentData: DocumentFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/documents", documentData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate documents query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
+      
+      toast({
+        title: "Document created",
+        description: `Document ${createForm.getValues().code}: ${createForm.getValues().title} has been created successfully.`,
+      });
+      
+      createForm.reset();
+      setIsAddDocumentOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating document",
+        description: error.message || "Failed to create document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Handle document creation
   const onCreateSubmit = (data: DocumentFormValues) => {
-    // In a real app, this would make an API call
-    console.log("Creating document:", data);
-    
-    toast({
-      title: "Document created",
-      description: `Document ${data.code}: ${data.title} has been created.`,
-    });
-    
-    createForm.reset();
-    setIsAddDocumentOpen(false);
+    createDocumentMutation.mutate(data);
   };
   
   // Handle document edit
