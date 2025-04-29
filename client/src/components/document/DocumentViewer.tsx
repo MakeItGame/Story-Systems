@@ -126,14 +126,14 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
               <h3 className="text-sm font-medium text-foreground mb-4 border-b border-gray-800 pb-2">REQUIRED CLEARANCE</h3>
               
               <div className="grid grid-cols-2 gap-4">
-                {accessError.requiredLevels.security > 0 && (
+                {accessError.requiredLevels.security && accessError.requiredLevels.security > 0 && (
                   <div className="flex items-center space-x-2">
                     <Shield className="h-4 w-4 text-blue-500" />
                     <span className="text-sm">Security: Level {accessError.requiredLevels.security}</span>
                   </div>
                 )}
                 
-                {accessError.requiredLevels.medical > 0 && (
+                {accessError.requiredLevels.medical && accessError.requiredLevels.medical > 0 && (
                   <div className="flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 8h-1V6c0-2.21-1.79-4-4-4h-2C8.79 2 7 3.79 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H8.9V6z"/>
@@ -143,7 +143,7 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
                   </div>
                 )}
                 
-                {accessError.requiredLevels.admin > 0 && (
+                {accessError.requiredLevels.admin && accessError.requiredLevels.admin > 0 && (
                   <div className="flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -312,17 +312,17 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
             <div className="flex items-center">
               <span className="text-xs text-gray-400 mr-2">ACCESS LEVEL:</span>
               <div className="flex space-x-1">
-                {document.securityLevel > 0 && (
+                {document.securityLevel && document.securityLevel > 0 && (
                   <span className="permission-badge inline-block px-2 py-1 bg-blue-900 text-xs rounded text-white">
                     SECURITY: LVL {document.securityLevel}+
                   </span>
                 )}
-                {document.medicalLevel > 0 && (
+                {document.medicalLevel && document.medicalLevel > 0 && (
                   <span className="permission-badge inline-block px-2 py-1 bg-green-900 text-xs rounded text-white">
                     MEDICAL: LVL {document.medicalLevel}+
                   </span>
                 )}
-                {document.adminLevel > 0 && (
+                {document.adminLevel && document.adminLevel > 0 && (
                   <span className="permission-badge inline-block px-2 py-1 bg-gray-700 text-xs rounded text-white">
                     ADMIN: LVL {document.adminLevel}+
                   </span>
@@ -386,9 +386,9 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
                 <p className="text-sm font-medium mb-1">{doc.title}</p>
                 <p className="text-xs text-gray-500">
                   {doc.documentCode} • 
-                  {doc.securityLevel > 0 && ` SECURITY LVL ${doc.securityLevel}`}
-                  {doc.medicalLevel > 0 && ` MEDICAL LVL ${doc.medicalLevel}`}
-                  {doc.adminLevel > 0 && ` ADMIN LVL ${doc.adminLevel}`}
+                  {doc.securityLevel && doc.securityLevel > 0 && ` SECURITY LVL ${doc.securityLevel}`}
+                  {doc.medicalLevel && doc.medicalLevel > 0 && ` MEDICAL LVL ${doc.medicalLevel}`}
+                  {doc.adminLevel && doc.adminLevel > 0 && ` ADMIN LVL ${doc.adminLevel}`}
                 </p>
               </a>
             ))}

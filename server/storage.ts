@@ -205,18 +205,7 @@ export class DatabaseStorage implements IStorage {
       // Using the same field names as defined in the schema
       const [document] = await db
         .insert(documents)
-        .values({
-          title: insertDocument.title,
-          documentCode: insertDocument.documentCode,
-          content: insertDocument.content,
-          securityLevel: insertDocument.securityLevel ?? 0,
-          medicalLevel: insertDocument.medicalLevel ?? 0,
-          adminLevel: insertDocument.adminLevel ?? 0,
-          author: insertDocument.author,
-          hasImages: insertDocument.hasImages ?? false,
-          images: insertDocument.images ?? [],
-          relatedDocuments: insertDocument.relatedDocuments ?? []
-        })
+        .values(insertDocument as any)
         .returning();
       return document;
     } catch (error) {
