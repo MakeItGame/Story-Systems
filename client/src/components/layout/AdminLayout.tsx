@@ -1,9 +1,10 @@
-import { ReactNode, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { ReactNode, useState, useEffect } from "react";
+import { Link, useLocation, Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
 import {
   Users, FileText, Terminal, MessageSquare, Trophy, 
   Settings, LogOut, Menu, X, Database, Home, FileCode
@@ -14,7 +15,8 @@ type AdminLayoutProps = {
 };
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, isLoading } = useAuth();
   const { logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   

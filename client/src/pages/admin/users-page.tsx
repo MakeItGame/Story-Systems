@@ -169,8 +169,8 @@ export default function AdminUsersPage() {
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
       
-    const matchesStatus = !statusFilter || user.status === statusFilter;
-    const matchesRole = !roleFilter || user.role === roleFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all" || user.status === statusFilter;
+    const matchesRole = !roleFilter || roleFilter === "all" || user.role === roleFilter;
     
     return matchesSearch && matchesStatus && matchesRole;
   });
@@ -294,7 +294,7 @@ export default function AdminUsersPage() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-secondary border-gray-700">
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="suspended">Suspended</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
@@ -306,7 +306,7 @@ export default function AdminUsersPage() {
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent className="bg-secondary border-gray-700">
-                    <SelectItem value="">All Roles</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="moderator">Moderator</SelectItem>
                     <SelectItem value="user">User</SelectItem>
