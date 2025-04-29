@@ -67,20 +67,14 @@ import {
   ArrowUpDown
 } from "lucide-react";
 
-// Extended document type for admin view
-interface AdminDocument {
-  id: number;
-  title: string;
-  code: string;
-  content: string;
-  securityLevel: number;
-  medicalLevel: number;
-  adminLevel: number;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
+// Import Document type from schema
+import { Document } from '@shared/schema';
+
+// Form data mapping fields
+interface DocumentFormMapping {
+  code: string; // Represents documentCode in API
   status: "published" | "draft" | "archived";
-  views: number;
+  views?: number;
 }
 
 // Form schema
@@ -213,7 +207,18 @@ export default function AdminDocumentsPage() {
   
   // Handle document creation
   const onCreateSubmit = (data: DocumentFormValues) => {
-    createDocumentMutation.mutate(data);
+    // Map the form data to match the API expectations
+    const apiData = {
+      title: data.title,
+      documentCode: data.code, // Map code to documentCode
+      content: data.content,
+      securityLevel: data.securityLevel, 
+      medicalLevel: data.medicalLevel,
+      adminLevel: data.adminLevel,
+      status: data.status
+    };
+    
+    createDocumentMutation.mutate(apiData as any);
   };
   
   // Handle document edit
