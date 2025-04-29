@@ -222,6 +222,13 @@ export default function AdminDocumentsPage() {
       // Invalidate documents query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
       
+      // Also invalidate individual document queries to update the document viewer
+      const documentId = selectedDocument?.id;
+      if (documentId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/documents', documentId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/documents/accessible'] });
+      }
+      
       toast({
         title: "Document updated",
         description: `Document ${editForm.getValues().documentCode}: ${editForm.getValues().title} has been updated successfully.`,
@@ -276,9 +283,13 @@ export default function AdminDocumentsPage() {
       const res = await apiRequest("DELETE", `/api/admin/documents/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       // Invalidate documents query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["/api/admin/documents"] });
+      
+      // Also invalidate individual document queries
+      queryClient.invalidateQueries({ queryKey: ['/api/documents', variables] });
+      queryClient.invalidateQueries({ queryKey: ['/api/documents/accessible'] });
       
       toast({
         title: "Document deleted",

@@ -704,10 +704,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const document = await storage.getDocument(id);
       if (!document) return res.status(404).json({ message: "Document not found" });
       
-      // Just mark the document as archived (soft delete) using an updatedAt timestamp
-      await storage.updateDocument(id, { 
-        updatedAt: new Date() 
-      });
+      // Implement actual deletion in database
+      const result = await db.delete(documents)
+        .where(eq(documents.id, id))
+        .returning();
+      
+      if (!result || result.length === 0) {
+        return res.status(500).json({ message: "Failed to delete document" });
+      }
       
       console.log(`Document deleted by admin: ${document.documentCode}: ${document.title}`);
       res.json({ message: "Document deleted successfully" });
