@@ -11,10 +11,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion } from "framer-motion";
-import { Loader2, Save, User, Lock, Eye, EyeOff, Bell, Shield } from "lucide-react";
+import { Loader2, Save, User, Lock, Eye, EyeOff, Bell, Shield, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const profileFormSchema = z.object({
   username: z.string().min(3, {
@@ -58,6 +69,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   
   // Profile form
   const profileForm = useForm<ProfileFormValues>({
@@ -153,6 +165,31 @@ export default function ProfilePage() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+  
+  // Reset game progress mutation
+  const resetProgressMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/user/reset-progress");
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Progress reset",
+        description: "Your game progress has been reset successfully.",
+      });
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
+      setIsResetDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Reset failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsResetDialogOpen(false);
     },
   });
   
