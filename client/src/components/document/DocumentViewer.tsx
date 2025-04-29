@@ -48,7 +48,20 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
     isLoading, 
     error 
   } = useQuery<Document, { status: number; data: AccessDeniedError }>({
-    queryKey: [`/api/documents/${documentId}`],
+    queryKey: ['/api/documents', documentId],
+    queryFn: async () => {
+      if (!documentId) throw new Error("No document ID provided");
+      
+      const response = await fetch(`/api/documents/${documentId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { 
+          status: response.status, 
+          data: errorData 
+        };
+      }
+      return response.json();
+    },
     enabled: !!documentId,
     retry: false, // Don't retry on permission errors
   });
@@ -58,7 +71,13 @@ export default function DocumentViewer({ documentId, onCredentialAdded }: Docume
 
   // Fetch related documents only if we have permission to the main document
   const { data: relatedDocuments } = useQuery<Document[]>({
-    queryKey: ['/api/documents'],
+    queryKey: ['/api/documents/accessible'],
+    queryFn: async () => {
+      // Use the same access levels as the selected credential
+      const response = await fetch('/api/documents/accessible');
+      if (!response.ok) throw new Error("Failed to fetch related documents");
+      return response.json();
+    },
     select: (docs) => 
       docs.filter(doc => document?.relatedDocuments?.includes(doc.id)),
     enabled: !!document?.relatedDocuments?.length && !accessError,
